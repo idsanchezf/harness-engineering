@@ -1,0 +1,18 @@
+{
+  "project": "",
+  "createdAt": null,
+  "updatedAt": null,
+  "humanInTheLoop": false,
+  "currentPhase": null,
+  "phases": {
+    "analysis":   { "status": "pending", "approved": false },
+    "architect":  { "status": "pending", "approved": false },
+    "design":     { "status": "pending", "approved": false },
+    "scaffold":   { "status": "pending", "approved": false },
+    "develop":    { "status": "pending", "approved": false },
+    "test":       { "status": "pending", "approved": false },
+    "quality":    { "status": "pending", "approved": false },
+    "deploy":     { "status": "pending", "approved": false }
+  },
+  "features": []
+}

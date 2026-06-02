@@ -1,0 +1,62 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "leader",
+
+  "instructions": [
+    "AGENTS.md"
+  ],
+
+  "agent": {
+    "leader": {
+      "mode": "primary",
+      "description": "Agente lider que orquesta el ciclo completo de ingenieria de software para microservicios .NET Core. Coordina subagentes especializados por fase del SDLC."
+    },
+    "analysis": {
+      "mode": "subagent",
+      "description": "Analisis de requerimientos, reglas de negocio, DDD, event storming y definicion de bounded contexts para microservicios .NET Core."
+    },
+    "architect": {
+      "mode": "subagent",
+      "description": "Definicion y mantenimiento de architecture.md con ADR, diagramas C4, stack tecnologico y restricciones transversales."
+    },
+    "design": {
+      "mode": "subagent",
+      "description": "Diseno de arquitectura, contratos API REST/gRPC, modelado de datos, patrones de integracion y definicion de topologia de microservicios."
+    },
+    "scaffold": {
+      "mode": "subagent",
+      "description": "Scaffolding de solucion .NET, proyectos, estructura de carpetas, configuracion de NuGet, Dockerfiles y docker-compose."
+    },
+    "develop": {
+      "mode": "subagent",
+      "description": "Implementacion de funcionalidad, controllers, servicios de aplicacion, dominio, repositorios, y logica de negocio en .NET Core."
+    },
+    "test": {
+      "mode": "subagent",
+      "description": "Pruebas unitarias, integracion, contract testing (Pact), pruebas de carga y generacion de cobertura para microservicios .NET."
+    },
+    "quality": {
+      "mode": "subagent",
+      "description": "Analisis estatico, revision de codigo, seguridad (OWASP), deuda tecnica, SonarQube, y cumplimiento de estandares en .NET Core."
+    },
+    "deploy": {
+      "mode": "subagent",
+      "description": "CI/CD, pipelines, despliegue en Kubernetes/Docker, health checks, observabilidad y configuracion de infraestructura como codigo."
+    },
+    "features": {
+      "mode": "subagent",
+      "description": "Gestion de features, backlog de tareas y archivo de estado del proyecto (una feature a la vez, persistencia entre sesiones)."
+    }
+  },
+
+  "permission": {
+    "edit": "ask",
+    "bash": {
+      "dotnet *": "allow",
+      "git *": "allow",
+      "docker *": "allow",
+      "kubectl *": "ask",
+      "*": "ask"
+    }
+  }
+}
