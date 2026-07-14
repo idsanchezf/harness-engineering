@@ -42,6 +42,19 @@ Antes de iniciar cualquier feature, el proyecto debe pasar por la fase de `incep
 }
 ```
 
+### Artefactos esperados por fase de inception
+
+Cada fase de inception debe producir artefactos concretos en el proyecto. Al completar una fase, el leader DEBE verificar que los artefactos existen **antes** de marcarla como `completed` en `.harness-state.json`.
+
+| Fase | Artefactos esperados | Verificacion |
+|------|---------------------|-------------|
+| `context` | — (solo contextual, sin artefactos escritos) | Sin verificacion |
+| `discovery` | `docs/inception/product-brief.md`, `docs/inception/stakeholder-map.md`, `docs/inception/feature-backlog.md`, `docs/inception/risk-register.md`, `docs/inception/nfr-catalog.md`, `docs/inception/success-metrics.md`, `docs/inception/technology-constraints.md` | Verificar que existen al menos 4 de los 7 archivos |
+| `ddd` | `docs/inception/domain-model.md`, `docs/inception/ubiquitous-language.md`, `docs/inception/domain-events.md`, `docs/inception/business-rules.md` | Verificar que los 4 archivos existen |
+| `architecture` | `docs/architecture.md` | Verificar que el archivo existe y contiene secciones `## Stack Tecnologico` y `## ADR` |
+| `scaffold` | Estructura de proyecto (`src/`, `tests/`), `Dockerfile`, `docker-compose.yml`, walking skeleton compilando y con tests pasando | Verificar que la solucion compila (`dotnet build`, `cargo build`, `go build`, etc.) y `docker compose config` es valido |
+| `environments` | `docs/inception/quality-tooling.md`, `docs/inception/environments.md` (opcional) | Verificar que `quality-tooling.md` existe |
+
 ### Pipeline: Feature-level
 
 Una vez completada la inception, cada feature tiene 2 fases a nivel feature (compartidas por todas sus HUs):
@@ -114,7 +127,11 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
 
 1. El subagente te reporta: exito/fallo + artefactos generados
 2. **Si la fase fue inception completa**: invocar `features inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
-3. **Si una fase de inception se completo** (ej. `context`, `discovery`, `ddd`): invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}`.
+3. **Si una fase de inception se completo** (ej. `discovery`, `ddd`, `architecture`, `scaffold`, `environments`):
+   - **Verificar artefactos**: Consulta la tabla "Artefactos esperados por fase de inception". Usa comandos bash (`Test-Path`, `Select-String`) para verificar que los archivos esperados existen en el filesystem. Para `scaffold`, verifica ademas que la solucion compile y que `docker compose config` sea valido.
+   - **Si los artefactos existen**: invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}`.
+   - **Si faltan artefactos**: NO marcar la fase como completada. Informar al usuario que artefactos faltan y solicitar al agente `inception` que los genere (o que explique por que no aplican) antes de reintentar la verificacion.
+   - **Excepcion `context`**: Esta fase no produce artefactos escritos. Se marca como completada directamente con `features inception phase complete context`.
 4. **Si la fase fue HU-level** (`develop`, `test`, `quality`, `deploy`): invocar `features hu phase complete {featureId} {huId} {fase}`
 5. **Si la fase completada fue `analysis`**: invocar `features hu create` para cada HU identificada en `user-stories.md`
 6. **Si la fase completada fue `design`**: verificar que existan skills para el stack definido en `docs/architecture.md`. Si falta algun skill, **pausar y preguntar al usuario**.
