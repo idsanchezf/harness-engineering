@@ -9,35 +9,39 @@
   "agent": {
     "leader": {
       "mode": "primary",
-      "description": "Agente lider que orquesta el ciclo completo de ingenieria de software para microservicios .NET Core. Coordina subagentes especializados por fase del SDLC."
+      "description": "Agente lider que orquesta el ciclo completo de ingenieria de software. Coordina subagentes especializados por fase del SDLC."
+    },
+    "inception": {
+      "mode": "subagent",
+      "description": "Fase inicial del proyecto. Define vision, alcance, backlog de features, DDD, arquitectura, scaffold, ambientes locales/cloud y tooling de calidad/seguridad. Se ejecuta UNA sola vez al inicio."
     },
     "analysis": {
       "mode": "subagent",
-      "description": "Analisis de requerimientos, reglas de negocio, DDD, event storming y definicion de bounded contexts para microservicios .NET Core."
+      "description": "Analisis de requerimientos por feature. Define historias de usuario detalladas con criterios de aceptacion en formato Gherkin (Given-When-Then)."
     },
     "architect": {
       "mode": "subagent",
-      "description": "Definicion y mantenimiento de architecture.md con ADR, diagramas C4, stack tecnologico y restricciones transversales."
+      "description": "Transversal. Definicion y mantenimiento de architecture.md con ADR, diagramas C4, stack tecnologico y restricciones. Invocado por inception y bajo demanda."
     },
     "design": {
       "mode": "subagent",
-      "description": "Diseno de arquitectura, contratos API REST/gRPC, modelado de datos, patrones de integracion y definicion de topologia de microservicios."
+      "description": "Diseno de contratos API REST/gRPC, modelo de datos, patrones de integracion y generacion de checklist de tareas."
     },
     "scaffold": {
       "mode": "subagent",
-      "description": "Scaffolding de solucion .NET, proyectos, estructura de carpetas, configuracion de NuGet, Dockerfiles y docker-compose."
+      "description": "Transversal. Scaffolding de solucion, estructura de carpetas, Dockerfiles y docker-compose. Invocado por inception y bajo demanda cuando una feature requiere un nuevo servicio."
     },
     "develop": {
       "mode": "subagent",
-      "description": "Implementacion de funcionalidad, controllers, servicios de aplicacion, dominio, repositorios, y logica de negocio en .NET Core."
+      "description": "Implementacion de funcionalidad siguiendo TDD, clean architecture y DDD."
     },
     "test": {
       "mode": "subagent",
-      "description": "Pruebas unitarias, integracion, contract testing (Pact), pruebas de carga y generacion de cobertura para microservicios .NET."
+      "description": "Pruebas unitarias, integracion, contract testing, pruebas de carga y generacion de cobertura."
     },
     "quality": {
       "mode": "subagent",
-      "description": "Analisis estatico, revision de codigo, seguridad (OWASP), deuda tecnica, SonarQube, y cumplimiento de estandares en .NET Core."
+      "description": "Analisis estatico, revision de seguridad (OWASP), deuda tecnica y cumplimiento de estandares de calidad."
     },
     "deploy": {
       "mode": "subagent",
@@ -45,7 +49,7 @@
     },
     "features": {
       "mode": "subagent",
-      "description": "Gestion de features, backlog de tareas y archivo de estado del proyecto (una feature a la vez, persistencia entre sesiones)."
+      "description": "Gestion de features, backlog de tareas y archivo de estado del proyecto. Persistencia entre sesiones, ramas feature/* y PRs."
     }
   },
 

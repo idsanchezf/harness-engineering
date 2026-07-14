@@ -1,9 +1,9 @@
 ---
-name: bdd
-description: Behavior-Driven Development con SpecFlow/Reqnroll para .NET Core. Usar cuando se definan criterios de aceptacion con lenguaje Gherkin (Given-When-Then) y se automaticen como pruebas vivas de especificacion.
+name: bdd-python
+description: Behavior-Driven Development para Python con Behave. Usar cuando se definan criterios de aceptacion con lenguaje Gherkin (Given-When-Then) y se automaticen como pruebas vivas de especificacion.
 ---
 
-# BDD — Behavior-Driven Development para .NET Core
+# BDD — Behavior-Driven Development para Python (Behave)
 
 ## Flujo BDD
 
@@ -36,37 +36,36 @@ Feature: Crear pedido
 
 ### 3. Automatizacion — Implementar step definitions
 
-```csharp
-[Binding]
-public class CreateOrderSteps
-{
-    private readonly IOrderRepository _repo;
-    private readonly IMediator _mediator;
-    private Result<OrderDto> _result;
+```python
+# features/steps/create_order_steps.py
+from behave import given, when, then
 
-    [Given(@"un producto ""(.*)"" con stock (\d+) y precio (\d+) USD")]
-    public async Task GivenProductWithStockAndPrice(string name, int stock, decimal price) { ... }
+@given('un producto "{name}" con stock {stock:d} y precio {price:d} USD')
+def step_given_product(context, name, stock, price):
+    context.product = Product(name=name, stock=stock, price=Money(price, "USD"))
 
-    [When(@"el cliente crea un pedido con (\d+) unidades de ""(.*)""")]
-    public async Task WhenClientCreatesOrder(int qty, string product) { ... }
+@when('el cliente crea un pedido con {qty:d} unidades de "{product_name}"')
+def step_when_create_order(context, qty, product_name):
+    cmd = CreateOrderCommand(product_id=context.product.id, quantity=qty)
+    context.result = context.handler.handle(cmd)
 
-    [Then(@"el pedido se registra con estado ""(.*)""")]
-    public void ThenOrderRegisteredWithStatus(string status) { ... }
-}
+@then('el pedido se registra con estado "{status}"')
+def step_then_order_status(context, status):
+    assert context.result.value.status == status
 ```
 
 ## Herramientas
 
 | Herramienta | Proposito |
 |------------|-----------|
-| Reqnroll (antes SpecFlow) | Engine BDD para .NET |
+| Behave | Engine BDD para Python |
 | Gherkin | Lenguaje de especificacion |
-| xUnit | Runner de pruebas (integrado con Reqnroll) |
-| FluentAssertions | Aserciones en step definitions |
+| pytest | Runner de pruebas (integrado con behave) |
 
 ## Reglas
 
 - Un archivo `.feature` por feature de negocio
-- Cada scenario debe ser independiente (no compartir estado entre scenarios)
+- Cada scenario debe ser independiente (usar `context` de behave para estado)
 - Mantener los step definitions reusables (usar parametros, no duplicar)
 - Las pruebas BDD son pruebas de aceptacion, no unitarias: validan el sistema completo
+- Ejecutar con `behave features/`

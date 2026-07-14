@@ -1,5 +1,5 @@
 ---
-name: tdd
+name: tdd-dotnet
 description: Test-Driven Development para .NET Core. Usar cuando se implemente codigo nuevo o se modifique existente. Ciclo RED-GREEN-REFACTOR con persistencia automatica del progreso en .harness-state.json para retomar tras interrupcion. Organizacion: una carpeta por clase, un archivo .cs por metodo con todos sus escenarios, nombramiento Gherkin y patron AAA.
 ---
 
