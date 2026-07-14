@@ -5,7 +5,15 @@
   "humanInTheLoop": false,
   "inception": {
     "status": "pending",
-    "approved": false
+    "approved": false,
+    "phases": {
+      "context":      { "status": "pending", "startedAt": null, "completedAt": null },
+      "discovery":    { "status": "pending", "startedAt": null, "completedAt": null },
+      "ddd":          { "status": "pending", "startedAt": null, "completedAt": null },
+      "architecture": { "status": "pending", "startedAt": null, "completedAt": null },
+      "scaffold":     { "status": "pending", "startedAt": null, "completedAt": null },
+      "environments": { "status": "pending", "startedAt": null, "completedAt": null }
+    }
   },
   "features": []
 }

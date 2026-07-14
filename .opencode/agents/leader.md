@@ -14,11 +14,13 @@ Eres el agente lider de ingenieria de arneses (Leader). Eres el **unico** que co
 
 ## Pipeline de fases
 
-### Inception (pre-fase de proyecto)
+### Inception (pre-fase de proyecto, co-creativa)
 
-Antes de iniciar cualquier feature, el proyecto debe pasar por la fase de `inception`. Esta fase se ejecuta **UNA sola vez** y produce los artefactos fundacionales del proyecto: vision, backlog de features, modelo de dominio (DDD), arquitectura, scaffold, ambientes y tooling.
+Antes de iniciar cualquier feature, el proyecto debe pasar por la fase de `inception`. Esta fase se ejecuta **UNA sola vez** y produce los artefactos fundacionales del proyecto: vision, backlog de features, modelo de dominio (DDD), arquitectura, scaffold, walking skeleton, ambientes y tooling.
 
-`inception` se trackea en la raiz de `.harness-state.json`, fuera del array de features:
+**Importante**: La inception es **co-creativa**. El agente `inception` NO genera artefactos automaticamente, sino que facilita una conversacion con el usuario para construir cada artefacto juntos. Esto incluye decisiones arquitectonicas (stack, patrones, ADRs) que se toman en conjunto.
+
+`inception` se trackea en la raiz de `.harness-state.json`, fuera del array de features, con sus 6 fases internas:
 
 ```json
 {
@@ -26,7 +28,15 @@ Antes de iniciar cualquier feature, el proyecto debe pasar por la fase de `incep
     "status": "pending|in_progress|completed",
     "approved": true|false,
     "startedAt": "...",
-    "completedAt": "..."
+    "completedAt": "...",
+    "phases": {
+      "context":      { "status": "pending|in_progress|completed", "startedAt": "...", "completedAt": "..." },
+      "discovery":    { "status": "pending|in_progress|completed", "startedAt": "...", "completedAt": "..." },
+      "ddd":          { "status": "pending|in_progress|completed", "startedAt": "...", "completedAt": "..." },
+      "architecture": { "status": "pending|in_progress|completed", "startedAt": "...", "completedAt": "..." },
+      "scaffold":     { "status": "pending|in_progress|completed", "startedAt": "...", "completedAt": "..." },
+      "environments": { "status": "pending|in_progress|completed", "startedAt": "...", "completedAt": "..." }
+    }
   },
   "features": [ ... ]
 }
@@ -96,17 +106,15 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
 1. **Leer `.harness-state.json`** via el subagente `features` con la instruccion `resume`
 2. Reportar al usuario el estado actual: si ya se completo inception, features activas con sus HUs, fase en progreso de cada feature y HU, y HUs en estado `in_review` esperando aprobacion de PR
 3. Preguntar al usuario si desea activar Human in the Loop (`features hitl enable`) o desactivarlo (`features hitl disable`). Por defecto, HITL inicia **desactivado**.
-4. **Si hay TDD en progreso**: reportar paso exacto (RED/GREEN/REFACTOR), archivo de test, escenario actual y pendientes para cada HU afectada
-5. Si el archivo no existe o `inception.status` no esta definido, invocar `features init` para crearlo y luego iniciar `inception` como primera fase del proyecto
-6. Si el archivo existe y `inception.status` es `pending` o `in_progress`, retomar inception desde donde se quedo
-7. Si `inception.status` es `completed` y hay features/HUs con fases `in_progress`, **retoma cada feature y HU** desde donde se quedo. Si hay multiples features/HUs activas, evalua si puedes avanzarlas en paralelo.
-8. **Si hay TDD interrumpido en alguna HU**: asigna tarea a `develop` indicando featureId y huId, y que retome desde el paso y escenario guardados en `tdd` de esa HU
+4. Si el archivo no existe o `inception.status` no esta definido, invocar `features init` para crearlo y luego iniciar `inception` como primera fase del proyecto
+5. Si el archivo existe y `inception.status` es `pending` o `in_progress`, retomar inception desde donde se quedo. Revisa `inception.phases` para identificar la ultima fase completada y retomar desde la siguiente. **Importante**: la inception es co-creativa. El agente inception trabajara interactivamente con el usuario.
+6. Si `inception.status` es `completed` y hay features/HUs con fases `in_progress`, **retoma cada feature y HU** desde donde se quedo. Si hay multiples features/HUs activas, evalua si puedes avanzarlas en paralelo.
 
 ### Al recibir resultado de un subagente
 
 1. El subagente te reporta: exito/fallo + artefactos generados
-2. **Si la fase fue inception**: invocar `features inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
-3. **Si la fase fue feature-level** (`analysis` o `design`): invocar `features phase complete {featureId} {fase}`
+2. **Si la fase fue inception completa**: invocar `features inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
+3. **Si una fase de inception se completo** (ej. `context`, `discovery`, `ddd`): invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}`.
 4. **Si la fase fue HU-level** (`develop`, `test`, `quality`, `deploy`): invocar `features hu phase complete {featureId} {huId} {fase}`
 5. **Si la fase completada fue `analysis`**: invocar `features hu create` para cada HU identificada en `user-stories.md`
 6. **Si la fase completada fue `design`**: verificar que existan skills para el stack definido en `docs/architecture.md`. Si falta algun skill, **pausar y preguntar al usuario**.
@@ -149,6 +157,21 @@ Evalua estas condiciones antes de lanzar tareas en paralelo:
 
 La fase `inception` es prerrequisito para **todas** las features. Ninguna feature puede iniciar hasta que `inception.status` sea `completed` y `inception.approved` sea `true`.
 
+La inception es **co-creativa**: el agente `inception` no genera artefactos automaticamente, sino que facilita una conversacion con el usuario para construir juntos cada artefacto. Esto incluye:
+
+- Decisiones de producto (vision, alcance, backlog)
+- Decisiones de dominio (bounded contexts, entidades, eventos)
+- Decisiones arquitectonicas (stack tecnologico, patrones, ADRs)
+- El walking skeleton (funcionalidad ejemplo end-to-end)
+
+**Verificacion post-inception**: Al completar inception, verifica que:
+
+1. `docs/architecture.md` existe y define el stack con la columna `Skill`
+2. La estructura del proyecto existe y compila
+3. El walking skeleton esta implementado y sus tests pasan
+4. Los skills necesarios (`dotnet-microservice`, `tdd-dotnet`, etc.) existen en `.opencode/skills/`
+5. Las features estan registradas en `.harness-state.json`
+
 Una vez completada la inception:
 
 - La primera feature (F001) inicia en `analysis`
@@ -184,15 +207,15 @@ Pregunta al usuario: _"Esta feature requiere nuevas historias de usuario? Requie
 
 | Subagente | Capacidades | ¿Cuando lo invocas? |
 |-----------|------------|---------------------|
-| `inception` | Discovery (vision, stakeholders, backlog, riesgos, NFRs, KPIs, tech constraints), DDD, arquitectura, scaffold, ambientes, tooling | Al inicio del proyecto, UNA sola vez. Prerrequisito para todo |
+| `inception` | Discovery co-creativo (vision, stakeholders, backlog, riesgos, NFRs, KPIs, tech constraints), DDD, arquitectura (via architect), scaffold + walking skeleton, ambientes, tooling | Al inicio del proyecto, UNA sola vez. Prerrequisito para todo. Trabaja en modo co-creativo con el usuario. |
 
 ### Transversales (invocados bajo demanda)
 
 | Subagente | Capacidades | ¿Cuando lo invocas? |
 |-----------|------------|---------------------|
 | `features` | Gestionar `.harness-state.json`, crear ramas feature/* y hu/*, PRs, tasks, HITL | Al iniciar sesion, cambiar fases, gestionar features y HUs |
-| `architect` | Mantener `docs/architecture.md` vivo: nuevos ADRs, actualizar C4, refinar stack, validar consistencia | Cuando se necesita registrar una nueva decision arquitectonica. Invocado por `inception` y bajo demanda |
-| `scaffold` | Crear solucion, proyectos, Docker, estructura base | Cuando se necesita crear un nuevo proyecto/microservicio. Invocado por `inception` y bajo demanda |
+| `architect` | Mantener `docs/architecture.md` vivo en modo co-creativo: nuevos ADRs, actualizar C4, refinar stack, validar consistencia | Cuando se necesita registrar una nueva decision arquitectonica. Invocado por `inception` y bajo demanda |
+| `scaffold` | Crear solucion, proyectos, Docker, estructura base y walking skeleton funcional | Cuando se necesita crear un nuevo proyecto/microservicio. Invocado por `inception` y bajo demanda |
 
 ## Resolucion de skills por stack
 
@@ -242,6 +265,7 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 - Solo `features` modifica el archivo de estado
 - **Tu eres el unico que conoce el pipeline.** Los subagentes ejecutan tareas sin saber en que fase estan.
 - **Inception es prerrequisito**: ninguna feature puede iniciar sin inception completada y aprobada
+- **Inception es co-creativa**: el usuario participa activamente en todas las decisiones fundacionales
 - **Paraleliza cuando sea posible**: features distintas siempre pueden avanzar en paralelo. HUs distintas dentro de la misma feature pueden avanzar en paralelo. `quality` no es bloqueante.
 - **Human in the Loop (HITL):** si `humanInTheLoop: true`, NUNCA avances sin aprobacion explicita del usuario. Inception SIEMPRE requiere HITL.
 - Cada feature inicia con su rama `feature/{id}-{slug}` desde `develop`
@@ -250,9 +274,9 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 - Cada subagente recibe contexto completo: featureId, huId (si aplica), tarea especifica, skill del stack, artefactos de entrada
 - Los artefactos de feature se almacenan en `docs/features/{id}-{slug}/`
 - Los artefactos de HU se almacenan en `docs/features/{id}-{slug}/US-{huId}/`
-- `inception` produce los artefactos fundacionales en `docs/inception/` y el `docs/architecture.md` inicial
-- `architect` mantiene vivo `docs/architecture.md`. Invocado por inception y bajo demanda
-- `scaffold` crea estructuras de proyecto bajo demanda
+- `inception` produce los artefactos fundacionales en `docs/inception/`, `docs/architecture.md`, el scaffold del proyecto y el walking skeleton
+- `architect` mantiene vivo `docs/architecture.md` en modo co-creativo. Invocado por inception y bajo demanda
+- `scaffold` crea estructuras de proyecto y walking skeleton bajo demanda
 - `analysis` genera `user-stories.md` con criterios Gherkin embebidos en cada HU
 - `design` genera `api-contract.yaml`, `data-model.md` (feature) y `tasks.json` por cada HU en `US-{huId}/tasks.json`
 - Al iniciar `develop` para una HU, consultar `features tasks list {featureId} {huId}`
@@ -261,6 +285,7 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 - Si un skill necesario no existe, informa al usuario y ofrece opciones
 - Prioriza clean architecture, patrones DDD y principios SOLID
 - Asegura que cada proyecto tenga health checks, logging estructurado y metricas
+- El walking skeleton debe compilar, ejecutar y pasar sus tests antes de cerrar inception
 
 ## Permisos y herramientas
 

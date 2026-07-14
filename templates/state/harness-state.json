@@ -12,7 +12,15 @@
   "humanInTheLoop": true,
   "inception": {
     "status": "pending",
-    "approved": false
+    "approved": false,
+    "phases": {
+      "context":      { "status": "pending", "startedAt": null, "completedAt": null },
+      "discovery":    { "status": "pending", "startedAt": null, "completedAt": null },
+      "ddd":          { "status": "pending", "startedAt": null, "completedAt": null },
+      "architecture": { "status": "pending", "startedAt": null, "completedAt": null },
+      "scaffold":     { "status": "pending", "startedAt": null, "completedAt": null },
+      "environments": { "status": "pending", "startedAt": null, "completedAt": null }
+    }
   },
   "features": []
 }
@@ -28,12 +36,46 @@
   "updatedAt": "2026-05-26T00:00:00Z",
   "humanInTheLoop": true,
 
-  // Inception: pre-fase de proyecto, se ejecuta UNA sola vez
+  // Inception: pre-fase de proyecto, se ejecuta UNA sola vez, tiene 6 fases internas
   "inception": {
     "status": "completed",        // pending | in_progress | completed
     "approved": true,             // HITL obligatorio
     "startedAt": "2026-05-26T00:00:00Z",
-    "completedAt": "2026-05-26T04:00:00Z"
+    "completedAt": "2026-05-26T04:00:00Z",
+
+    // Fases internas de inception (secuenciales)
+    "phases": {
+      "context": {                // Fase 0: Bienvenida y contexto del proyecto
+        "status": "completed",     // pending | in_progress | completed
+        "startedAt": "2026-05-26T00:00:00Z",
+        "completedAt": "2026-05-26T00:15:00Z"
+      },
+      "discovery": {              // Fase 1: Discovery (Product Brief, Stakeholders, Backlog, Riesgos, NFRs, KPIs, Tech Constraints)
+        "status": "completed",
+        "startedAt": "2026-05-26T00:15:00Z",
+        "completedAt": "2026-05-26T01:30:00Z"
+      },
+      "ddd": {                    // Fase 2: Domain-Driven Design (Bounded Contexts, Entidades, VOs, Eventos, Reglas)
+        "status": "completed",
+        "startedAt": "2026-05-26T01:30:00Z",
+        "completedAt": "2026-05-26T02:00:00Z"
+      },
+      "architecture": {           // Fase 3: Arquitectura (Stack, ADRs, C4, Patrones — via architect)
+        "status": "completed",
+        "startedAt": "2026-05-26T02:00:00Z",
+        "completedAt": "2026-05-26T03:00:00Z"
+      },
+      "scaffold": {               // Fase 4: Scaffold + Walking Skeleton (via scaffold)
+        "status": "completed",
+        "startedAt": "2026-05-26T03:00:00Z",
+        "completedAt": "2026-05-26T03:45:00Z"
+      },
+      "environments": {           // Fase 5: Ambientes Cloud + Quality Tooling
+        "status": "completed",
+        "startedAt": "2026-05-26T03:45:00Z",
+        "completedAt": "2026-05-26T04:00:00Z"
+      }
+    }
   },
 
   "features": [
@@ -97,21 +139,8 @@
               "status": "pending",
               "approved": false
             }
-          },
-
-          // TDD tracking por HU
-          "tdd": {
-            "step": "red",                   // red | green | refactor
-            "class": "GoogleOAuthHandler",
-            "method": "HandleAsync",
-            "testFile": "tests/OrderService.UnitTests/Application/Auth/GoogleOAuthHandlerTests/HandleAsyncTests.cs",
-            "scenario": "Should_ReturnToken_When_GoogleCodeIsValid",
-            "scenariosCompleted": ["Should_ReturnToken_When_GoogleCodeIsValid"],
-            "scenariosPending": [
-              "Should_ReturnError_When_GoogleCodeIsInvalid",
-              "Should_ReturnError_When_GoogleApiUnavailable"
-            ]
           }
+
         },
         {
           "id": "US-002",
@@ -125,8 +154,7 @@
             "test":    { "status": "pending", "approved": false },
             "quality": { "status": "pending", "approved": false },
             "deploy":  { "status": "pending", "approved": false }
-          },
-          "tdd": null
+          }
         }
       ]
     }
@@ -142,6 +170,20 @@
 |-------|---------|
 | `inception.status` | `pending`, `in_progress`, `completed` |
 | `inception.approved` | `true`, `false` |
+| `inception.phases.{fase}.status` | `pending`, `in_progress`, `completed` |
+
+**Fases de inception (6 fases internas, secuenciales):**
+
+| Fase | Key | Descripcion |
+|------|-----|-------------|
+| Fase 0 | `context` | Bienvenida y contexto del proyecto |
+| Fase 1 | `discovery` | Product Brief, Stakeholders, Backlog, Riesgos, NFRs, KPIs, Tech Constraints |
+| Fase 2 | `ddd` | Domain-Driven Design (Bounded Contexts, Entidades, VOs, Eventos, Reglas) |
+| Fase 3 | `architecture` | Stack tecnologico, ADRs, C4, Patrones (via architect) |
+| Fase 4 | `scaffold` | Estructura del proyecto + Walking Skeleton (via scaffold) |
+| Fase 5 | `environments` | Ambientes Cloud + Quality Tooling |
+
+Estas fases permiten retomar inception desde donde se quedo si la sesion se interrumpe.
 
 ### Feature
 
@@ -158,9 +200,3 @@
 | `userStories[].status` | `pending`, `in_progress`, `in_review`, `done`, `blocked` |
 | `userStories[].phases.{fase}.status` | `pending`, `in_progress`, `completed`, `blocked` |
 | `userStories[].phases.{fase}.approved` | `true`, `false` |
-
-### TDD
-
-| Campo | Valores |
-|-------|---------|
-| `tdd.step` | `red`, `green`, `refactor` |

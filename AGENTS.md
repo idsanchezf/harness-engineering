@@ -29,7 +29,7 @@ El agente lider `leader` se activa automaticamente como agente por defecto. Al i
 
 - Lee `.harness-state.json` para conocer el estado del proyecto
 - Si el archivo no existe, lo crea e inicia la fase `inception`
-- Si existe y `inception` esta pendiente, inicia inception
+- Si existe y `inception` esta pendiente, inicia inception (retomando desde la fase donde se quedo)
 - Si `inception` esta completada, retoma desde la feature/fase donde se quedo
 
 ### 3. Comienza con una solicitud
@@ -40,13 +40,14 @@ Escribe en lenguaje natural lo que necesitas. El lider evaluara la solicitud y d
 
 ### Inception (pre-fase de proyecto, una sola vez)
 
-Antes de cualquier feature, el proyecto pasa por `inception`. Esta fase produce todos los artefactos fundacionales:
+Antes de cualquier feature, el proyecto pasa por `inception`. Esta fase es **co-creativa**: el agente NO genera artefactos automaticamente, sino que facilita una conversacion con el usuario para construir juntos cada artefacto. Produce:
 
 - Vision, alcance, stakeholders, backlog de features
 - Riesgos, NFRs, KPIs, restricciones tecnologicas
 - Modelo de dominio (DDD): bounded contexts, entidades, value objects, eventos de dominio
-- Arquitectura inicial: stack tecnologico, patrones, C4, ADRs → `docs/architecture.md`
+- Arquitectura inicial: stack tecnologico, patrones, C4, ADRs → `docs/architecture.md` (co-disenada con el usuario)
 - Scaffold del proyecto: solucion, Docker, ambientes, tooling de calidad/seguridad
+- **Walking skeleton**: funcionalidad ejemplo end-to-end que recorre todas las capas de la arquitectura (API → Application → Domain → Infrastructure). Incluye tests unitarios y de integracion
 
 ### Pipeline por feature (2 fases feature-level)
 
@@ -80,7 +81,7 @@ develop → test → quality → deploy
 .opencode/
   agents/
     leader.md      # Agente lider (orquestador principal)
-    inception.md   # Discovery, DDD, arquitectura, scaffold, tooling (una vez)
+    inception.md   # Discovery co-creativo, DDD, arquitectura, scaffold, walking skeleton, tooling (una vez)
     analysis.md    # User stories + criterios Gherkin (BDD)
     architect.md   # Transversal: mantiene architecture.md vivo
     design.md      # Contratos API, modelo de datos, integracion
@@ -131,7 +132,7 @@ develop → test → quality → deploy
 |--------|-------------------|-----------|
 | `leader` | default (automatico) | Orquestador unico del proceso |
 | `features` | Gestion de backlog, ramas y estado | Transversal |
-| `inception` | Discovery, DDD, arquitectura, scaffold, tooling | Pre-fase de proyecto (una vez) |
+| `inception` | Discovery co-creativo, DDD, arquitectura, scaffold, walking skeleton, tooling | Pre-fase de proyecto (una vez, co-creativa) |
 | `analysis` | User stories + Gherkin BDD | Ejecutor (feature-level) |
 | `design` | Contratos API, modelo de datos, tasks por HU | Ejecutor (feature-level) |
 | `develop` | Implementacion de funcionalidad con TDD | Ejecutor (HU-level) |
@@ -211,7 +212,11 @@ El agente `features` gestiona el backlog y el archivo `.harness-state.json`:
 @features inception start                 # Iniciar fase inception del proyecto
 @features inception complete              # Completar fase inception
 @features inception status                # Ver estado de inception
+@features inception phase start {fase}    # Iniciar una fase especifica de inception
+@features inception phase complete {fase} # Completar una fase especifica de inception
 ```
+
+Fases de inception: `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `environments`
 
 ### Historias de Usuario (HU)
 
@@ -239,7 +244,7 @@ El agente `features` gestiona el backlog y el archivo `.harness-state.json`:
 
 Persiste el progreso entre sesiones. Si cierras opencode y vuelves a abrirlo, el lider lee este archivo y retoma exactamente donde quedaste.
 
-Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases y sus HUs con fases independientes, lo que permite trazabilidad y paralelismo.
+Inception se trackea en la raiz con sus 6 fases internas. Cada feature tiene su propio tracking de fases y sus HUs con fases independientes, lo que permite trazabilidad y paralelismo.
 
 ```json
 {
@@ -251,7 +256,15 @@ Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases 
     "status": "completed",
     "approved": true,
     "startedAt": "2026-05-26T00:00:00Z",
-    "completedAt": "2026-05-26T04:00:00Z"
+    "completedAt": "2026-05-26T04:00:00Z",
+    "phases": {
+      "context":      { "status": "completed", "startedAt": "...", "completedAt": "..." },
+      "discovery":    { "status": "completed", "startedAt": "...", "completedAt": "..." },
+      "ddd":          { "status": "completed", "startedAt": "...", "completedAt": "..." },
+      "architecture": { "status": "completed", "startedAt": "...", "completedAt": "..." },
+      "scaffold":     { "status": "completed", "startedAt": "...", "completedAt": "..." },
+      "environments": { "status": "completed", "startedAt": "...", "completedAt": "..." }
+    }
   },
   "features": [
     {
@@ -263,8 +276,10 @@ Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases 
       "assignedTo": null,
       "docsPath": "docs/features/F001-registro-usuarios-oauth2/",
       "branch": "feature/F001-registro-usuarios-oauth2",
+      "prUrl": null,
       "createdAt": "2026-05-26T00:00:00Z",
       "startedAt": "2026-05-26T02:00:00Z",
+      "completedAt": null,
       "phases": {
         "analysis": { "status": "completed", "approved": true, "startedAt": "...", "completedAt": "..." },
         "design":   { "status": "completed", "approved": true, "startedAt": "...", "completedAt": "..." }
@@ -275,21 +290,13 @@ Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases 
           "title": "Registro con Google OAuth2",
           "status": "in_progress",
           "branch": "hu/F001-US-001-registro-google-oauth2",
+          "prUrl": null,
           "docsPath": "docs/features/F001-registro-usuarios-oauth2/US-001/",
           "phases": {
             "develop": { "status": "in_progress", "approved": false, "startedAt": "..." },
             "test":    { "status": "pending",     "approved": false },
             "quality": { "status": "pending",     "approved": false },
             "deploy":  { "status": "pending",     "approved": false }
-          },
-          "tdd": {
-            "step": "red",
-            "class": "GoogleOAuthHandler",
-            "method": "HandleAsync",
-            "testFile": "tests/.../HandleAsyncTests.cs",
-            "scenario": "Should_ReturnToken_When_GoogleCodeIsValid",
-            "scenariosCompleted": [],
-            "scenariosPending": ["Should_ReturnToken_When_GoogleCodeIsValid"]
           }
         }
       ]
@@ -308,7 +315,7 @@ Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases 
 | `in_progress` | El subagente inception esta trabajando |
 | `completed` | Finalizada con exito |
 
-**Fases (`phases.<fase>.status`):** Aplica a fases de feature y de HU
+**Fases (`phases.<fase>.status`):** Aplica a fases de inception, feature y de HU
 
 | Estado | Significado |
 |--------|-------------|
@@ -316,6 +323,8 @@ Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases 
 | `in_progress` | El subagente correspondiente esta trabajando |
 | `completed` | Finalizada con exito |
 | `blocked` | Detenida por dependencia externa |
+
+**Fases de inception (6 fases internas):** `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `environments`
 
 **Features (`features[].status`):**
 
@@ -341,9 +350,10 @@ Inception se trackea en la raiz. Cada feature tiene su propio tracking de fases 
 
 ```
 1. "Crear un sistema de facturacion electronica para pymes"
-   └─ leader -> inception (vision, DDD, arquitectura, scaffold, tooling)
+   └─ leader -> inception (vision, DDD, arquitectura, scaffold, walking skeleton, tooling)
+   └─ El usuario co-crea cada artefacto en conversacion con el agente inception
 
-2. (inception completada y aprobada)
+2. (inception completada y aprobada, walking skeleton funcionando)
    └─ leader -> analysis F001 (historias de usuario + criterios Gherkin)
 
 3. (analysis completada, HUs identificadas)
@@ -397,7 +407,8 @@ mi-proyecto/
 │   │   ├── ubiquitous-language.md
 │   │   ├── domain-events.md
 │   │   ├── business-rules.md
-│   │   └── quality-tooling.md
+│   │   ├── quality-tooling.md
+│   │   └── walking-skeleton.md               # Guia de implementacion del walking skeleton
 │   ├── architecture.md                     # ADRs, C4, stack tecnologico
 │   └── features/                           # Una carpeta por feature
 │       └── F001-registro-usuarios-oauth2/
@@ -422,7 +433,10 @@ mi-proyecto/
 ## Reglas del proceso
 
 - **Inception es prerrequisito**: ninguna feature puede iniciar sin inception completada y aprobada
+- **Inception co-creativa**: inception se construye en conversacion con el usuario, no automaticamente
+- **Walking skeleton**: al completar inception, existe una funcionalidad ejemplo funcional que recorre todas las capas
 - **Inception HITL obligatorio**: inception siempre requiere aprobacion explicita del usuario, sin importar el valor de `humanInTheLoop`
+- **Fases de inception trackeadas**: 6 fases internas (`context`, `discovery`, `ddd`, `architecture`, `scaffold`, `environments`) se persisten en `.harness-state.json` para retomar desde donde se quedo
 - **Fases mixtas**: analysis y design son por feature. develop, test, quality, deploy son por HU
 - **Multiples features en progreso**: se permite que mas de una feature este `in_progress` simultaneamente
 - **Multiples HUs en progreso**: dentro de una feature, varias HUs pueden avanzar en paralelo
