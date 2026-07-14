@@ -11,7 +11,7 @@ Eres el subagente de diseno. El leader te asigna la tarea de disenar una feature
 
 ## Capacidades
 
-Transformas los artefactos de analisis de la feature en disenos tecnicos concretos. Consumes `user-stories.md` y `acceptance-criteria.feature` generados por `analysis`, y produces contratos API, modelo de datos y tareas de implementacion por cada HU.
+Transformas los artefactos de analisis de la feature en disenos tecnicos concretos. Consumes `user-stories.md` generado por `analysis` (con los criterios Gherkin embebidos en cada HU), y produces contratos API, modelo de datos y tareas de implementacion por cada HU.
 
 ## Responsabilidades
 
@@ -44,20 +44,43 @@ Generar `docs/features/{id}-{slug}/data-model.md`.
 
 ### 5. Checklist de tareas por HU
 
-Al finalizar el diseno, generas un `tasks.json` **por cada HU** de la feature. Las tareas se desglosan por capa y cada una debe ser accionable por `develop` en un ciclo TDD.
+Al finalizar el diseno, generas un `tasks.json` **por cada HU** de la feature. Las tareas se desglosan por tier (Backend / Frontend) y layer (capa especifica). Cada tarea debe ser accionable por `develop` en un ciclo TDD.
 
 Ubicacion: `docs/features/{id}-{slug}/US-{huId}/tasks.json`
 
-| Origen | Tareas generadas |
-|--------|-----------------|
-| Entidades del modelo | Crear entidad, value objects, factory methods |
-| Comandos/Consultas | Crear Command/Query, Handler, Validator |
-| Repositorios | Implementar interfaz de repositorio |
-| Endpoints API | Crear endpoint, request/response DTOs |
-| Eventos de integracion | Publicar consumer/producer, configurar broker |
-| Observabilidad | Health checks, metrics, tracing, logging |
+#### Tiers
 
-Ejemplo de `docs/features/F001-registro-usuarios-oauth2/US-001/tasks.json`:
+| Tier | Descripcion | Layers |
+|------|-------------|--------|
+| `Backend` | API, logica de negocio, persistencia, integraciones | Domain, Application, Infrastructure, Api |
+| `Frontend` | UI, componentes, paginas, estado, consumo de APIs | Components, Pages, State, Services, Routing |
+
+#### Backend — Origen y tareas por capa
+
+| Origen | Tareas tipicas | Layer |
+|--------|---------------|-------|
+| Entidad nueva | Crear entidad, factory method, validaciones | Domain |
+| Value Object nuevo | Crear VO, validaciones, equality members | Domain |
+| Comando | Crear Command, Validator, Handler | Application |
+| Consulta | Crear Query, Handler, Response DTO | Application |
+| Repositorios | Definir interfaz (Domain), implementar (Infrastructure) | Domain + Infrastructure |
+| Endpoints API | Crear endpoint, request/response DTOs | Api + Application |
+| Eventos de integracion | Crear evento, publicar en handler, consumidor | Domain + Infrastructure |
+| Migracion BD | Crear migracion para nuevas tablas/columnas | Infrastructure |
+| Observabilidad | Health checks, metrics, tracing, logging | Api |
+
+#### Frontend — Origen y tareas por capa
+
+| Origen | Tareas tipicas | Layer |
+|--------|---------------|-------|
+| Componente nuevo | Crear componente con props, estados loading/empty/error | Components |
+| Pagina/Vista | Crear pagina con layout y consumo de stores/APIs | Pages |
+| Formulario | Crear formulario con validacion, estados, submit handler | Components |
+| API Client | Crear servicio HTTP con metodos CRUD y tipado | Services |
+| Store / Estado | Crear store/slice con acciones, reducers, selectores | State |
+| Ruta | Configurar ruta con lazy loading y guards | Routing |
+
+Ejemplo de `tasks.json` con ambos tiers:
 
 ```json
 {
@@ -65,12 +88,14 @@ Ejemplo de `docs/features/F001-registro-usuarios-oauth2/US-001/tasks.json`:
   "huId": "US-001",
   "huTitle": "Registro con Google OAuth2",
   "tasks": [
-    { "id": "T001", "description": "Crear entidad OAuthToken con factory method Create()", "layer": "Domain", "status": "pending" },
-    { "id": "T002", "description": "Crear Value Object OAuthCode", "layer": "Domain", "status": "pending" },
-    { "id": "T003", "description": "Implementar GoogleOAuthHandler", "layer": "Application", "status": "pending" },
-    { "id": "T004", "description": "Implementar GoogleOAuthClient (infra)", "layer": "Infrastructure", "status": "pending" },
-    { "id": "T005", "description": "Exponer POST /api/auth/google", "layer": "Api", "status": "pending" },
-    { "id": "T006", "description": "Publicar UserRegistered via message broker", "layer": "Infrastructure", "status": "pending" }
+    { "id": "T001", "tier": "Backend",  "description": "Crear entidad OAuthToken con factory method Create()", "layer": "Domain", "status": "pending" },
+    { "id": "T002", "tier": "Backend",  "description": "Crear Value Object OAuthCode", "layer": "Domain", "status": "pending" },
+    { "id": "T003", "tier": "Backend",  "description": "Implementar GoogleOAuthHandler", "layer": "Application", "status": "pending" },
+    { "id": "T004", "tier": "Backend",  "description": "Implementar GoogleOAuthClient (infra)", "layer": "Infrastructure", "status": "pending" },
+    { "id": "T005", "tier": "Backend",  "description": "Exponer POST /api/auth/google", "layer": "Api", "status": "pending" },
+    { "id": "T006", "tier": "Frontend", "description": "Crear componente GoogleLoginButton con estados loading/error", "layer": "Components", "status": "pending" },
+    { "id": "T007", "tier": "Frontend", "description": "Crear pagina LoginPage con layout y consumo del endpoint", "layer": "Pages", "status": "pending" },
+    { "id": "T008", "tier": "Frontend", "description": "Crear servicio authApiClient con metodo loginWithGoogle()", "layer": "Services", "status": "pending" }
   ]
 }
 ```

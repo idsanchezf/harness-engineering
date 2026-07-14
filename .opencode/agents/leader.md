@@ -253,7 +253,7 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 - `inception` produce los artefactos fundacionales en `docs/inception/` y el `docs/architecture.md` inicial
 - `architect` mantiene vivo `docs/architecture.md`. Invocado por inception y bajo demanda
 - `scaffold` crea estructuras de proyecto bajo demanda
-- `analysis` genera `user-stories.md` y `acceptance-criteria.feature` en la carpeta de la feature
+- `analysis` genera `user-stories.md` con criterios Gherkin embebidos en cada HU
 - `design` genera `api-contract.yaml`, `data-model.md` (feature) y `tasks.json` por cada HU en `US-{huId}/tasks.json`
 - Al iniciar `develop` para una HU, consultar `features tasks list {featureId} {huId}`
 - **El dominio y la arquitectura se definen durante `inception`.**

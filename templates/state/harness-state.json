@@ -1,0 +1,166 @@
+# Plantilla: Harness State JSON
+
+> Fase: Features (transversal)
+> Artefacto: `.harness-state.json`
+
+---
+
+{
+  "project": "{Nombre del Proyecto}",
+  "createdAt": "{ISO8601}",
+  "updatedAt": "{ISO8601}",
+  "humanInTheLoop": true,
+  "inception": {
+    "status": "pending",
+    "approved": false
+  },
+  "features": []
+}
+
+---
+
+## Schema completo (con features y HUs pobladas)
+
+```jsonc
+{
+  "project": "OrderService",
+  "createdAt": "2026-05-26T00:00:00Z",
+  "updatedAt": "2026-05-26T00:00:00Z",
+  "humanInTheLoop": true,
+
+  // Inception: pre-fase de proyecto, se ejecuta UNA sola vez
+  "inception": {
+    "status": "completed",        // pending | in_progress | completed
+    "approved": true,             // HITL obligatorio
+    "startedAt": "2026-05-26T00:00:00Z",
+    "completedAt": "2026-05-26T04:00:00Z"
+  },
+
+  "features": [
+    {
+      "id": "F001",                          // Auto-incrementado
+      "name": "Registro de usuarios con OAuth2",
+      "slug": "registro-usuarios-oauth2",    // kebab-case
+      "description": "Implementar flujo de registro con Google y Microsoft",
+      "status": "in_progress",               // pending | in_progress | in_review | done | blocked
+      "assignedTo": null,
+      "docsPath": "docs/features/F001-registro-usuarios-oauth2/",
+      "branch": "feature/F001-registro-usuarios-oauth2",
+      "prUrl": null,                         // URL del PR feature → develop
+      "createdAt": "2026-05-26T00:00:00Z",
+      "startedAt": "2026-05-26T02:00:00Z",
+      "completedAt": null,
+
+      // Fases feature-level (2 fases)
+      "phases": {
+        "analysis": {
+          "status": "completed",             // pending | in_progress | completed | blocked
+          "approved": true,                  // HITL
+          "startedAt": "2026-05-26T02:00:00Z",
+          "completedAt": "2026-05-26T03:00:00Z"
+        },
+        "design": {
+          "status": "completed",
+          "approved": true,
+          "startedAt": "2026-05-26T03:00:00Z",
+          "completedAt": "2026-05-26T04:00:00Z"
+        }
+      },
+
+      // Historias de usuario (registradas tras analysis)
+      "userStories": [
+        {
+          "id": "US-001",                    // Auto-incrementado dentro de la feature
+          "title": "Registro con Google OAuth2",
+          "status": "in_progress",           // pending | in_progress | in_review | done | blocked
+          "branch": "hu/F001-US-001-registro-google-oauth2",
+          "prUrl": null,                     // URL del PR hu/* → feature/*
+          "docsPath": "docs/features/F001-registro-usuarios-oauth2/US-001/",
+
+          // Fases HU-level (4 fases)
+          "phases": {
+            "develop": {
+              "status": "in_progress",
+              "approved": false,
+              "startedAt": "2026-05-26T04:00:00Z",
+              "completedAt": null
+            },
+            "test": {
+              "status": "pending",
+              "approved": false
+            },
+            "quality": {
+              "status": "pending",
+              "approved": false
+            },
+            "deploy": {
+              "status": "pending",
+              "approved": false
+            }
+          },
+
+          // TDD tracking por HU
+          "tdd": {
+            "step": "red",                   // red | green | refactor
+            "class": "GoogleOAuthHandler",
+            "method": "HandleAsync",
+            "testFile": "tests/OrderService.UnitTests/Application/Auth/GoogleOAuthHandlerTests/HandleAsyncTests.cs",
+            "scenario": "Should_ReturnToken_When_GoogleCodeIsValid",
+            "scenariosCompleted": ["Should_ReturnToken_When_GoogleCodeIsValid"],
+            "scenariosPending": [
+              "Should_ReturnError_When_GoogleCodeIsInvalid",
+              "Should_ReturnError_When_GoogleApiUnavailable"
+            ]
+          }
+        },
+        {
+          "id": "US-002",
+          "title": "Registro con Microsoft OAuth2",
+          "status": "pending",
+          "branch": null,
+          "prUrl": null,
+          "docsPath": "docs/features/F001-registro-usuarios-oauth2/US-002/",
+          "phases": {
+            "develop": { "status": "pending", "approved": false },
+            "test":    { "status": "pending", "approved": false },
+            "quality": { "status": "pending", "approved": false },
+            "deploy":  { "status": "pending", "approved": false }
+          },
+          "tdd": null
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Estados validos
+
+### Inception
+
+| Campo | Valores |
+|-------|---------|
+| `inception.status` | `pending`, `in_progress`, `completed` |
+| `inception.approved` | `true`, `false` |
+
+### Feature
+
+| Campo | Valores |
+|-------|---------|
+| `features[].status` | `pending`, `in_progress`, `in_review`, `done`, `blocked` |
+| `features[].phases.{fase}.status` | `pending`, `in_progress`, `completed`, `blocked` |
+| `features[].phases.{fase}.approved` | `true`, `false` |
+
+### HU
+
+| Campo | Valores |
+|-------|---------|
+| `userStories[].status` | `pending`, `in_progress`, `in_review`, `done`, `blocked` |
+| `userStories[].phases.{fase}.status` | `pending`, `in_progress`, `completed`, `blocked` |
+| `userStories[].phases.{fase}.approved` | `true`, `false` |
+
+### TDD
+
+| Campo | Valores |
+|-------|---------|
+| `tdd.step` | `red`, `green`, `refactor` |

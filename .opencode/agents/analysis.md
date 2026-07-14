@@ -74,8 +74,7 @@ Para cada historia de usuario, indicar:
 
 Generar en `docs/features/{id}-{slug}/`:
 
-- `user-stories.md` — Historias de usuario detalladas de la feature
-- `acceptance-criteria.feature` — Archivo Gherkin con todos los escenarios de aceptacion
+- `user-stories.md` — Historias de usuario detalladas de la feature con criterios de aceptacion Gherkin embebidos en cada HU. Este archivo es la fuente de verdad para el BDD. Los escenarios aqui definidos se usaran en fases posteriores para generar archivos `.feature` automatizables por HU.
 
 Estructura de `user-stories.md`:
 
@@ -88,23 +87,31 @@ Estructura de `user-stories.md`:
 
 ## US-001: {Titulo}
 
-**Como** {rol}
-**Quiero** {accion}
-**Para** {beneficio}
-
 **Prioridad**: Must have | Should have | Could have
 
 **Entidades afectadas**: {lista}
 **Eventos de dominio**: {lista}
 
-### Criterios de aceptacion
+### Criterios de aceptacion (Gherkin)
 
-Ver `acceptance-criteria.feature` para los escenarios Gherkin completos.
+```gherkin
+Feature: {Nombre de la feature — US-001}
+  Como {rol}
+  Quiero {accion}
+  Para {beneficio}
+
+  Scenario: Should_{Resultado}_When_{Condicion}
+    Given {precondicion}
+    When {accion}
+    Then {resultado esperado}
+```
 
 ---
 
 ## US-002: ...
 ```
+
+Los escenarios Gherkin se definen inline en cada HU. Los archivos `.feature` automatizables se generan por HU durante la fase BDD.
 
 ## BDD y automatizacion
 

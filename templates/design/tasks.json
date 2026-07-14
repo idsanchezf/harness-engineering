@@ -1,0 +1,170 @@
+# Plantilla: Tasks (por HU)
+
+> Fase: Design > Generacion de tareas (por HU)
+> Artefacto: `docs/features/{id}-{slug}/US-{huId}/tasks.json`
+
+---
+
+{
+  "featureId": "{id}",
+  "huId": "{huId}",
+  "huTitle": "{Titulo de la HU}",
+  "tasks": [
+    {
+      "id": "T001",
+      "tier": "Backend",
+      "description": "Crear entidad {NombreEntidad} con factory method Create()",
+      "layer": "Domain",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T002",
+      "tier": "Backend",
+      "description": "Crear Value Object {NombreVO} con validacion de {regla}",
+      "layer": "Domain",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T003",
+      "tier": "Backend",
+      "description": "Crear Command {Nombre}Command con propiedades requeridas",
+      "layer": "Application",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T004",
+      "tier": "Backend",
+      "description": "Implementar Handler {Nombre}Handler con logica de negocio",
+      "layer": "Application",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T005",
+      "tier": "Backend",
+      "description": "Exponer endpoint {METHOD} /api/{recurso} con request/response",
+      "layer": "Api",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T006",
+      "tier": "Frontend",
+      "description": "Crear componente {NombreComponente} con estados loading/empty/error/success",
+      "layer": "Components",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T007",
+      "tier": "Frontend",
+      "description": "Crear servicio API client para {recurso} con metodos CRUD",
+      "layer": "Services",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T008",
+      "tier": "Frontend",
+      "description": "Crear pagina/vista {NombrePagina} con layout y consumo de API",
+      "layer": "Pages",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T009",
+      "tier": "Frontend",
+      "description": "Configurar ruta /{ruta} con lazy loading",
+      "layer": "Routing",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    },
+    {
+      "id": "T010",
+      "tier": "Frontend",
+      "description": "Crear store/estado para {recurso} con acciones y selectores",
+      "layer": "State",
+      "status": "pending",
+      "testFile": null,
+      "startedAt": null,
+      "completedAt": null
+    }
+  ]
+}
+
+---
+
+# Guia de generacion de tareas
+
+## Tiers
+
+| Tier | Descripcion |
+|------|-------------|
+| `Backend` | API, logica de negocio, persistencia, integraciones |
+| `Frontend` | UI, componentes, paginas, estado, consumo de APIs |
+
+## Backend — Capas y tareas tipicas
+
+| Origen | Tareas tipicas | Layer |
+|--------|---------------|-------|
+| Entidad nueva | Crear entidad, factory method, validaciones | Domain |
+| Value Object nuevo | Crear VO, validaciones, equality members | Domain |
+| Comando | Crear Command, Validator, Handler | Application |
+| Consulta | Crear Query, Handler, Response DTO | Application |
+| Repositorio | Definir interfaz (Domain), implementar (Infrastructure) | Domain + Infrastructure |
+| Endpoint | Crear endpoint, request/response DTOs, mapeo | Api + Application |
+| Evento de dominio | Crear evento, publicar en handler, consumidor (si aplica) | Domain + Infrastructure |
+| Integracion externa | Crear cliente HTTP/gRPC, DTOs de integracion, retry policy | Infrastructure |
+| Migracion BD | Crear migracion para nuevas tablas/columnas | Infrastructure |
+| Health check | Agregar probe para nueva dependencia | Api |
+| Registro DI | Registrar servicios, repositorios, handlers en el contenedor | Infrastructure |
+| Validacion | Crear validador de request/command con reglas de negocio | Application |
+| Mapeo | Crear mapping profiles/extensions (entidad ↔ DTO) | Application |
+| Middleware | Agregar middleware de logging, exception handling, correlation | Api |
+
+## Frontend — Capas y tareas tipicas
+
+| Origen | Tareas tipicas | Layer |
+|--------|---------------|-------|
+| Componente nuevo | Crear componente con props interface, estados (loading/empty/error/success), tests unitarios | Components |
+| Pagina/Vista | Crear pagina con layout, composicion de componentes, consumo de stores/servicios | Pages |
+| Formulario | Crear formulario con validacion, estados touched/dirty/error, submit handler | Components |
+| API Client | Crear servicio HTTP con metodos CRUD, tipado de respuestas, manejo de errores | Services |
+| Store / Estado | Crear store/slice/contexto con estado inicial, acciones, reducers, selectores | State |
+| Ruta | Configurar ruta con path, lazy loading, guards de autenticacion/autorizacion | Routing |
+| Hook / Composable | Crear hook reutilizable para logica compartida entre componentes | Components |
+| Pipe / Filter | Crear pipe de formato/transformacion (fechas, monedas, texto) | Components |
+| Guard / Interceptor | Crear guard de ruta (auth, rol) o interceptor HTTP (token, error) | Routing / Services |
+| Test unitario | Crear test de componente/pagina con mocking de servicios y stores | Components / Pages |
+| Test e2e | Crear test end-to-end para el flujo completo de la HU | Pages |
+| Accesibilidad | Implementar roles ARIA, keyboard navigation, focus management | Components |
+| i18n | Agregar traducciones para textos estaticos y mensajes de la HU | Components |
+| Storybook | Crear stories para componentes con variantes y estados | Components |
+
+## Reglas de tareas
+- Una tarea por artefacto concreto. Nada de "implementar dominio" o "hacer frontend".
+- Cada tarea debe ser accionable por `develop` en un ciclo TDD (RED → GREEN → REFACTOR).
+- El campo `tier` identifica si es Backend o Frontend.
+- El campo `layer` identifica la capa especifica dentro del tier.
+- Las tareas se ordenan por precedencia y tier: primero Backend (Domain → Application → Infrastructure → Api), luego Frontend (Services → State → Components → Pages → Routing).

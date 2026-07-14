@@ -353,6 +353,7 @@ Las tareas NO se almacenan en `.harness-state.json`. Cada HU tiene su propio `ta
   "tasks": [
     {
       "id": "T001",
+      "tier": "Backend",
       "description": "Crear entidad OAuthToken con factory method",
       "layer": "Domain",
       "status": "done",
@@ -361,6 +362,7 @@ Las tareas NO se almacenan en `.harness-state.json`. Cada HU tiene su propio `ta
     },
     {
       "id": "T002",
+      "tier": "Backend",
       "description": "Implementar GoogleOAuthHandler",
       "layer": "Application",
       "status": "in_progress",
@@ -375,6 +377,22 @@ Las tareas NO se almacenan en `.harness-state.json`. Cada HU tiene su propio `ta
     }
   ]
 }
+```
+
+### Progreso
+
+Al consultar `tasks progress`, `features` lee el `tasks.json` de la HU y calcula:
+
+```
+HU US-001: Registro con Google   [████████░░]  50% (4/8 tareas)
+  Backend:  [██████████] 100% (3/3)
+    Domain:         [██████████] 100% (2/2)
+    Application:    [██████████] 100% (1/1)
+  Frontend: [██████░░░░]  25% (1/4)
+    Components:     [██████████] 100% (1/1)
+    Pages:          [░░░░░░░░░░]   0% (0/1)
+    Services:       [░░░░░░░░░░]   0% (0/1)
+    State:          [░░░░░░░░░░]   0% (0/1)
 ```
 
 ### Estructura de carpeta por feature
@@ -398,8 +416,7 @@ docs/
 ├── architecture.md                    # Arquitectura global (ADR, C4) — creado por inception, mantenido por architect
 ├── features/
 │   └── F001-registro-usuarios-oauth2/
-│       ├── user-stories.md            # analysis (feature): todas las HUs
-│       ├── acceptance-criteria.feature # analysis (feature): criterios Gherkin
+│       ├── user-stories.md            # analysis (feature): todas las HUs con criterios Gherkin embebidos
 │       ├── api-contract.yaml          # design (feature): contratos API
 │       ├── data-model.md              # design (feature): modelo de datos
 │       ├── US-001/

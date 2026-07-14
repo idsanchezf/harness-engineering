@@ -1,0 +1,317 @@
+# Plantilla: API Contract (OpenAPI 3.0)
+
+> Fase: Design (feature-level)
+> Artefacto: `docs/features/{id}-{slug}/api-contract.yaml`
+
+---
+
+openapi: "3.0.3"
+info:
+  title: "{Nombre del Servicio} — {Nombre de la Feature}"
+  description: "Endpoints para {descripcion de la feature}"
+  version: "1.0.0"
+  contact:
+    name: "{Equipo}"
+    email: "{email}"
+
+servers:
+  - url: "http://localhost:8080"
+    description: "Desarrollo local"
+  - url: "https://{servicio}.staging.{dominio}"
+    description: "Staging"
+  - url: "https://{servicio}.{dominio}"
+    description: "Produccion"
+
+tags:
+  - name: "{Tag}"
+    description: "{Descripcion del grupo de endpoints}"
+
+paths:
+  /api/{recurso}:
+    get:
+      tags:
+        - "{Tag}"
+      summary: "Listar {recurso}"
+      description: "Retorna una lista paginada de {recurso}"
+      operationId: "list{Recurso}"
+      parameters:
+        - name: "page"
+          in: "query"
+          schema:
+            type: "integer"
+            default: 1
+          description: "Numero de pagina"
+        - name: "pageSize"
+          in: "query"
+          schema:
+            type: "integer"
+            default: 20
+            maximum: 100
+          description: "Elementos por pagina"
+        - name: "sort"
+          in: "query"
+          schema:
+            type: "string"
+          description: "Campo de ordenamiento (ej. createdAt:desc)"
+        - name: "filter"
+          in: "query"
+          schema:
+            type: "string"
+          description: "Filtro en formato RSQL o similar"
+      responses:
+        "200":
+          description: "Lista paginada de {recurso}"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{Recurso}ListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      tags:
+        - "{Tag}"
+      summary: "Crear {recurso}"
+      description: "Crea un nuevo {recurso}"
+      operationId: "create{Recurso}"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Create{Recurso}Request"
+      responses:
+        "201":
+          description: "{Recurso} creado exitosamente"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{Recurso}Response"
+          headers:
+            Location:
+              schema:
+                type: "string"
+              description: "URL del recurso creado"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/{recurso}/{id}:
+    get:
+      tags:
+        - "{Tag}"
+      summary: "Obtener {recurso} por ID"
+      operationId: "get{Recurso}ById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "200":
+          description: "{Recurso} encontrado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{Recurso}Response"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      tags:
+        - "{Tag}"
+      summary: "Actualizar {recurso}"
+      operationId: "update{Recurso}"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Update{Recurso}Request"
+      responses:
+        "200":
+          description: "{Recurso} actualizado"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/{Recurso}Response"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags:
+        - "{Tag}"
+      summary: "Eliminar {recurso}"
+      operationId: "delete{Recurso}"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            format: "uuid"
+      responses:
+        "204":
+          description: "{Recurso} eliminado"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    {Recurso}Response:
+      type: "object"
+      required:
+        - "id"
+        - "createdAt"
+      properties:
+        id:
+          type: "string"
+          format: "uuid"
+          description: "Identificador unico"
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        createdAt:
+          type: "string"
+          format: "date-time"
+          description: "Fecha de creacion"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+          description: "Fecha de ultima actualizacion"
+
+    Create{Recurso}Request:
+      type: "object"
+      required:
+        - "{campo}"
+      properties:
+        {campo}:
+          type: "string"
+          description: "Descripcion del campo"
+          example: "valor de ejemplo"
+          minLength: 1
+          maxLength: 100
+
+    Update{Recurso}Request:
+      type: "object"
+      properties:
+        {campo}:
+          type: "string"
+          description: "Descripcion del campo"
+
+    {Recurso}ListResponse:
+      type: "object"
+      properties:
+        items:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/{Recurso}Response"
+        totalCount:
+          type: "integer"
+          description: "Total de elementos"
+        page:
+          type: "integer"
+        pageSize:
+          type: "integer"
+        totalPages:
+          type: "integer"
+
+    ProblemDetails:
+      type: "object"
+      properties:
+        type:
+          type: "string"
+          description: "URI del tipo de error (RFC 7807)"
+        title:
+          type: "string"
+          description: "Titulo del error"
+        status:
+          type: "integer"
+          description: "Codigo HTTP"
+        detail:
+          type: "string"
+          description: "Detalle del error"
+        instance:
+          type: "string"
+          description: "URI de la instancia que genero el error"
+        errors:
+          type: "array"
+          description: "Errores de validacion (si aplica)"
+          items:
+            type: "object"
+            properties:
+              field:
+                type: "string"
+              message:
+                type: "string"
+
+  responses:
+    BadRequest:
+      description: "Request invalido"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Unauthorized:
+      description: "No autenticado"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Forbidden:
+      description: "No autorizado"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    NotFound:
+      description: "Recurso no encontrado"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    Conflict:
+      description: "Conflicto — recurso ya existe o estado invalido"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    ValidationError:
+      description: "Error de validacion"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+    InternalError:
+      description: "Error interno del servidor"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+
+  securitySchemes:
+    BearerAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"
+
+security:
+  - BearerAuth: []

@@ -401,9 +401,8 @@ mi-proyecto/
 │   ├── architecture.md                     # ADRs, C4, stack tecnologico
 │   └── features/                           # Una carpeta por feature
 │       └── F001-registro-usuarios-oauth2/
-│           ├── user-stories.md              # analysis (feature): todas las HUs
-│           ├── acceptance-criteria.feature  # analysis (feature): Gherkin
-│           ├── api-contract.yaml            # design (feature): API
+│       ├── user-stories.md            # analysis (feature): todas las HUs con criterios Gherkin embebidos
+│       ├── api-contract.yaml          # design (feature): contratos API
 │           ├── data-model.md                # design (feature): datos
 │           ├── US-001/
 │           │   ├── tasks.json               # design: tareas de develop
