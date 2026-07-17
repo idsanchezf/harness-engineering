@@ -1,0 +1,40 @@
+{
+  "files": {
+    "code": [],
+    "document": [],
+    "paper": [],
+    "image": [],
+    "video": []
+  },
+  "total_files": 0,
+  "total_words": 0,
+  "needs_graph": false,
+  "warning": "Corpus is ~0 words - fits in a single context window. You may not need a graph.",
+  "skipped_sensitive": [],
+  "graphifyignore_patterns": 52,
+  "git": {
+    "source_owner": "git",
+    "source_hash": "bb746409f7a4086095552195e7be9646ec14aff9",
+    "branches": [
+      "master"
+    ],
+    "max_commits": 200,
+    "active_within_days": 30
+  },
+  "scope": {
+    "requested_mode": "all",
+    "resolved_mode": "all",
+    "source": "configured-default",
+    "root": ".",
+    "git_root": ".",
+    "head": "bb746409f7a4086095552195e7be9646ec14aff9",
+    "candidate_count": null,
+    "included_count": 0,
+    "excluded_untracked_count": 0,
+    "excluded_ignored_count": 0,
+    "excluded_sensitive_count": 0,
+    "missing_committed_count": 0,
+    "warnings": [],
+    "recommendation": null
+  }
+}

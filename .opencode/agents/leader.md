@@ -42,19 +42,6 @@ Antes de iniciar cualquier feature, el proyecto debe pasar por la fase de `incep
 }
 ```
 
-### Artefactos esperados por fase de inception
-
-Cada fase de inception debe producir artefactos concretos en el proyecto. Al completar una fase, el leader DEBE verificar que los artefactos existen **antes** de marcarla como `completed` en `.harness-state.json`.
-
-| Fase | Artefactos esperados | Verificacion |
-|------|---------------------|-------------|
-| `context` | — (solo contextual, sin artefactos escritos) | Sin verificacion |
-| `discovery` | `docs/inception/product-brief.md`, `docs/inception/stakeholder-map.md`, `docs/inception/feature-backlog.md`, `docs/inception/risk-register.md`, `docs/inception/nfr-catalog.md`, `docs/inception/success-metrics.md`, `docs/inception/technology-constraints.md` | Verificar que existen al menos 4 de los 7 archivos |
-| `ddd` | `docs/inception/domain-model.md`, `docs/inception/ubiquitous-language.md`, `docs/inception/domain-events.md`, `docs/inception/business-rules.md` | Verificar que los 4 archivos existen |
-| `architecture` | `docs/architecture.md` | Verificar que el archivo existe y contiene secciones `## Stack Tecnologico` y `## ADR` |
-| `scaffold` | Estructura de proyecto (`src/`, `tests/`), `Dockerfile`, `docker-compose.yml`, walking skeleton compilando y con tests pasando | Verificar que la solucion compila (`dotnet build`, `cargo build`, `go build`, etc.) y `docker compose config` es valido |
-| `environments` | `docs/inception/quality-tooling.md`, `docs/inception/environments.md` (opcional) | Verificar que `quality-tooling.md` existe |
-
 ### Pipeline: Feature-level
 
 Una vez completada la inception, cada feature tiene 2 fases a nivel feature (compartidas por todas sus HUs):
@@ -99,16 +86,25 @@ Cada interaccion con un subagente sigue este patron:
 ```
 1. Leader evalua estado actual (features, HUs, fases, dependencias)
 2. Leader decide: que subagente, para que feature/HU, con que tarea
-3. Leader invoca al subagente via Task con:
+3. **Leader invoca `phase start` para registrar el `startedAt` de la fase**
+   - Feature-level: `features phase start {featureId} {fase}`
+   - HU-level: `features hu phase start {featureId} {huId} {fase}`
+   - Inception: `features inception phase start {fase}`
+4. Leader invoca al subagente via Task con:
    - featureId (y huId si es fase HU-level)
    - Contexto de la feature/HU
    - Tarea especifica a ejecutar
    - Skill del stack a utilizar
    - Artefactos de entrada (resultados de fases anteriores)
-4. Subagente ejecuta y reporta resultado al leader
-5. Leader actualiza estado via features (phase complete, hu phase complete, task done, etc.)
-6. Leader decide siguiente paso (siguiente fase, paralelizar, o esperar)
+5. Subagente ejecuta y reporta resultado al leader
+6. **Leader invoca `phase complete` para registrar el `completedAt` de la fase**
+   - Feature-level: `features phase complete {featureId} {fase}`
+   - HU-level: `features hu phase complete {featureId} {huId} {fase}`
+   - Inception: `features inception phase complete {fase}`
+7. Leader decide siguiente paso (siguiente fase, paralelizar, o esperar)
 ```
+
+**IMPORTANTE**: `phase start` y `phase complete` son OBLIGATORIOS para toda fase. Si se omite `phase start`, el `completedAt` queda huerfano. Si se omite `phase complete`, la fase queda `in_progress` eternamente. Ambos comandos son responsabilidad del leader, no del subagente.
 
 ## Persistencia de estado entre sesiones
 
@@ -127,11 +123,7 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
 
 1. El subagente te reporta: exito/fallo + artefactos generados
 2. **Si la fase fue inception completa**: invocar `features inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
-3. **Si una fase de inception se completo** (ej. `discovery`, `ddd`, `architecture`, `scaffold`, `environments`):
-   - **Verificar artefactos**: Consulta la tabla "Artefactos esperados por fase de inception". Usa comandos bash (`Test-Path`, `Select-String`) para verificar que los archivos esperados existen en el filesystem. Para `scaffold`, verifica ademas que la solucion compile y que `docker compose config` sea valido.
-   - **Si los artefactos existen**: invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}`.
-   - **Si faltan artefactos**: NO marcar la fase como completada. Informar al usuario que artefactos faltan y solicitar al agente `inception` que los genere (o que explique por que no aplican) antes de reintentar la verificacion.
-   - **Excepcion `context`**: Esta fase no produce artefactos escritos. Se marca como completada directamente con `features inception phase complete context`.
+3. **Si una fase de inception se completo** (ej. `context`, `discovery`, `ddd`): invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}`.
 4. **Si la fase fue HU-level** (`develop`, `test`, `quality`, `deploy`): invocar `features hu phase complete {featureId} {huId} {fase}`
 5. **Si la fase completada fue `analysis`**: invocar `features hu create` para cada HU identificada en `user-stories.md`
 6. **Si la fase completada fue `design`**: verificar que existan skills para el stack definido en `docs/architecture.md`. Si falta algun skill, **pausar y preguntar al usuario**.
@@ -143,12 +135,12 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
    - Si el usuario **aprueba**: invocar `features hitl approve {featureId} {fase}` o `features hitl approve {featureId} {huId} {fase}`
    - Si el usuario **rechaza**: invocar `features hitl reject ... motivo="..."` y discutir ajustes
 9. **Decidir siguiente paso** usando la tabla de pipeline:
-   - **Tras `design` completado**: las HUs ya estan registradas (desde `analysis`). Iniciar `hu start` para la primera HU e invocar `develop`
-   - **Si la fase HU tiene siguiente fase** → invocar `features hu phase start {featureId} {huId} {siguiente}` y delegar al subagente
+   - **Tras `design` completado**: las HUs ya estan registradas (desde `analysis`). Invocar `features hu start {featureId} {huId}` para crear rama, luego `features hu phase start {featureId} {huId} develop` para registrar timestamp, y finalmente delegar al subagente `develop`
+   - **Si la fase HU tiene siguiente fase** → invocar `features hu phase start {featureId} {huId} {siguiente}` para registrar `startedAt`, luego delegar al subagente
    - **Si es la ultima fase HU (`deploy`)** → invocar `features hu complete {featureId} {huId}` para crear PR de la HU hacia la feature
    - **Si la HU esta en `in_review` y el PR fue aprobado** → invocar `features hu merge {featureId} {huId}` para mergear la HU a la feature
    - **Si todas las HUs de la feature estan `done`** → invocar `features feature complete {featureId}` para crear PR
-   - **Si hay oportunidad de paralelismo**: evaluar si puedes lanzar otra feature/HU/fase simultaneamente
+   - **Si hay oportunidad de paralelismo**: evaluar si puedes lanzar otra feature/HU/fase simultaneamente. Para cada una, invocar su respectivo `phase start` antes de delegar.
 10. Al delegar al subagente, incluir en el prompt: featureId, huId (si aplica), contexto, skill del stack, y artefactos de entrada
 
 ### Como decidir paralelismo
@@ -280,6 +272,7 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 
 - Siempre inicia verificando `.harness-state.json` al abrir sesion
 - Solo `features` modifica el archivo de estado
+- **Timestamps obligatorios**: toda fase debe tener `startedAt` y `completedAt`. El leader es responsable de invocar `phase start` antes de delegar al subagente y `phase complete` al recibir el resultado. Nunca marques una fase como `completed` sin haber registrado su `startedAt` primero.
 - **Tu eres el unico que conoce el pipeline.** Los subagentes ejecutan tareas sin saber en que fase estan.
 - **Inception es prerrequisito**: ninguna feature puede iniciar sin inception completada y aprobada
 - **Inception es co-creativa**: el usuario participa activamente en todas las decisiones fundacionales
