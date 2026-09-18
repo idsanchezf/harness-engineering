@@ -189,4 +189,14 @@ function collect({ projectDir, hu, feature }) {
   };
 }
 
-module.exports = { collect, collectHu, collectFeature, HU_PHASES, FEATURE_PHASES };
+module.exports = {
+  collect,
+  collectHu,
+  collectFeature,
+  loadState,
+  loadTasks,
+  buildPhaseTypeBreakdown,
+  buildCoverage,
+  HU_PHASES,
+  FEATURE_PHASES,
+};

@@ -1,5 +1,5 @@
 ---
-description: Trazabilidad de tiempo y tokens consumidos por fase del pipeline. Corre el subcomando `track` del paquete npm del harness, redacta los reportes de tracking (por feature y global), y devuelve los datos crudos al leader para que `features` los persista en el estado. Invocado al completar la fase `tracking` de cada HU, y bajo demanda para regenerar reportes.
+description: Trazabilidad de tiempo y tokens consumidos por fase del pipeline. Corre el subcomando `track` del paquete npm del harness, redacta los reportes de tracking (por feature y global) y el dashboard HTML interactivo, y devuelve los datos crudos al leader para que `features` los persista en el estado. Invocado al completar la fase `tracking` de cada HU, y bajo demanda para regenerar reportes.
 mode: subagent
 permission:
   edit: allow
@@ -22,7 +22,10 @@ Los agentes NO pueden saber por si mismos cuantos tokens consumieron. Vos no cal
 npx @idsanchezf/harness-engineering@{harnessEngineeringVersion} track collect --hu {featureId}:{huId}
 npx @idsanchezf/harness-engineering@{harnessEngineeringVersion} track collect --feature {featureId}
 npx @idsanchezf/harness-engineering@{harnessEngineeringVersion} track collect
+npx @idsanchezf/harness-engineering@{harnessEngineeringVersion} track dashboard
 ```
+
+`track dashboard` genera un dashboard HTML autocontenido (sin dependencias, funciona abierto directo en el navegador) en `docs/tracking/dashboard.html`: una vista global con resumen por feature (clickeable) y drilldown al detalle de cada feature (HUs, fases, tareas, consumo por tipo de fase). Usa `--out {ruta}` para escribirlo en otro lugar. No imprime JSON de tracking para persistir — solo genera el archivo (a diferencia de `collect`, que es la fuente que vos interpretas para redactar los reportes markdown).
 
 - `{harnessEngineeringVersion}` es el campo raiz del mismo nombre en `.harness-state.json`. Si es `null` (primera vez), usa `@latest` y reporta al leader que se debe fijar esa version en el estado (el leader se lo pasa a `features` junto con el resto del JSON).
 - Si la version pineada ya no esta disponible (network/registry), reintenta con `@latest` y agrega un warning explicito en el reporte — nunca dejes que esto bloquee la fase.
@@ -38,21 +41,23 @@ npx @idsanchezf/harness-engineering@{harnessEngineeringVersion} track collect
 
 - `collect hu {featureId} {huId}` — corre `track collect --hu {featureId}:{huId}`, redacta/actualiza la seccion de esa HU en `docs/features/{featureId}-{slug}/tracking-report.md` (usando `templates/tracking/feature-report.md`), y devuelve al leader el JSON crudo para `features tracking record {featureId} {huId}`
 - `collect feature {featureId}` — corre `track collect --feature {featureId}`, regenera `tracking-report.md` completo de esa feature
-- `collect global` — corre `track collect` (sin scope), regenera `docs/tracking/global-report.md` usando `templates/tracking/global-report.md`
+- `collect global` — corre `track collect` (sin scope), regenera `docs/tracking/global-report.md` usando `templates/tracking/global-report.md`, y ademas corre `track dashboard` para refrescar el dashboard HTML (mismo momento, misma fuente de datos)
+- `dashboard` — corre solo `track dashboard` (regenera unicamente el HTML, sin tocar los reportes markdown) — util si el usuario pide "solo el dashboard" bajo demanda
 
 ## Responsabilidades
 
 1. **Ejecutar `track collect`** con el scope correcto (ver arriba), usando la version pineada de `.harness-state.json` cuando exista
 2. **Interpretar el JSON de salida**: nunca sumes/calcules nada vos mismo (`phaseTypeBreakdown`, `coverage` y los totales ya vienen calculados) — tu trabajo es redactar prosa/tablas a partir de esos numeros, no recalcularlos
 3. **Redactar el reporte de feature** (`templates/tracking/feature-report.md`): resumen, desglose por HU, desglose por HU y fase, desglose por HU y tarea, consumo por tipo de fase (con la fase de mayor consumo destacada explicitamente), metricas derivadas, cobertura y limitaciones
-4. **Redactar el reporte global** (`templates/tracking/global-report.md`) cuando aplique: resumen del proyecto, tabla por feature, consumo por tipo de fase a nivel proyecto, top 5 HUs/tareas mas costosas, tendencia por fecha de feature completada
+4. **Redactar el reporte global** (`templates/tracking/global-report.md`) cuando aplique: resumen del proyecto, tabla por feature, consumo por tipo de fase a nivel proyecto, top 5 HUs/tareas mas costosas, tendencia por fecha de feature completada. En el mismo momento, correr `track dashboard` para refrescar `docs/tracking/dashboard.html`
 5. **Devolver al leader** el JSON crudo de `track collect` sin modificar, para que se persista via `features tracking record {featureId} {huId}` (o el equivalente a nivel feature si aplica)
 6. **Nunca bloquear el pipeline por falta de datos**: si `track collect` no encuentra tokens para una fase/tarea (`tokensSource: "unavailable"`), el reporte lo muestra como "N/D" en la seccion de cobertura, y la fase `tracking` se completa igual con normalidad
 
 ## Artefactos de salida
 
 - `docs/features/{featureId}-{slug}/tracking-report.md` — reporte de tracking de la feature (creado/actualizado en cada HU que completa su fase `tracking`, y en `feature merge`)
-- `docs/tracking/global-report.md` — reporte global del proyecto (actualizado en cada `feature merge`, y bajo demanda)
+- `docs/tracking/global-report.md` — reporte global del proyecto en markdown (actualizado en cada `feature merge`, y bajo demanda)
+- `docs/tracking/dashboard.html` — dashboard HTML interactivo (mismo momento que el reporte global): vista con resumen por feature, drilldown al detalle de cada una (HUs, fases, tareas, consumo por tipo de fase). Autocontenido, se abre directo en el navegador sin servidor
 
 ## Permisos y herramientas
 

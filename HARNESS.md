@@ -454,9 +454,10 @@ Sin esta convencion, el tracking cae a un fallback por ventana de tiempo (`start
 ### Donde viven los reportes
 
 - `docs/features/{id}-{slug}/tracking-report.md` — reporte por feature: resumen, desglose por HU, por HU y fase, por HU y tarea, consumo por tipo de fase (develop/test/quality/deploy/tracking), metricas derivadas, cobertura de datos
-- `docs/tracking/global-report.md` — reporte global: resumen por feature, consumo por tipo de fase a nivel proyecto, top HUs/tareas mas costosas, tendencia por fecha de feature completada
+- `docs/tracking/global-report.md` — reporte global en markdown: resumen por feature, consumo por tipo de fase a nivel proyecto, top HUs/tareas mas costosas, tendencia por fecha de feature completada
+- `docs/tracking/dashboard.html` — **dashboard HTML interactivo**, generado por `track dashboard`: una pagina autocontenida (sin dependencias, sin llamadas de red, funciona abierta directo desde el filesystem) con una vista global — tarjetas de resumen, tabla de features, barras de consumo por tipo de fase — y drilldown: al hacer click en una feature se muestra su detalle completo (HUs, fases, tareas), con un boton para volver al resumen. Pensado para compartir con el equipo sin necesitar abrir varios `.md`
 
-Se actualizan automaticamente cuando una HU completa su fase `tracking` (reporte de feature) y cuando una feature se mergea (`feature merge`, ambos reportes), ademas de bajo demanda via `@features tracking report feature {id}` / `@features tracking report global`.
+Se actualizan automaticamente cuando una HU completa su fase `tracking` (reporte de feature) y cuando una feature se mergea (`feature merge`, reporte global + dashboard), ademas de bajo demanda via `@features tracking report feature {id}` / `@features tracking report global`.
 
 ### Riesgos y limitaciones (comunicados en los propios reportes, seccion "Cobertura y limitaciones")
 
