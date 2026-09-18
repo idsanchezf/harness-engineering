@@ -89,9 +89,63 @@ La plantilla genera una configuracion equivalente por cada CLI de agentes que el
 - Docker Desktop (opcional, para contenerizacion)
 - Git
 
-### Opcion A: `npx` (recomendada)
+### Configuracion de `.npmrc` (una sola vez por maquina)
 
-El paquete se publica en GitHub Packages como `@idsanchezf/harness-engineering`. GitHub Packages requiere autenticacion incluso para paquetes publicos: copia [`.npmrc.example`](./.npmrc.example) a `.npmrc` (en tu proyecto o en `~/.npmrc`) y sigue las instrucciones del archivo para generar un token con scope `read:packages`.
+El paquete se publica en **GitHub Packages**, no en el registro publico de npm. GitHub Packages exige autenticacion para instalar **incluso en paquetes publicos** — sin esto, `npx`/`npm install` fallan con `404 Not Found` o `403 Forbidden`. Se configura una sola vez por maquina (no por proyecto).
+
+**1. Crear un Personal Access Token (PAT) en GitHub**
+
+- Ve a GitHub → foto de perfil → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)** → **Generate new token (classic)**
+- Marca el scope **`read:packages`** (alcanza para instalar; no marques `write:packages` salvo que tambien vayas a publicar)
+- Genera el token y copialo — GitHub solo lo muestra una vez
+
+**2. Configurar `.npmrc`**
+
+Copia [`.npmrc.example`](./.npmrc.example) a `.npmrc`. Dos ubicaciones posibles:
+
+| Ubicacion | Alcance | Cuando usarla |
+|-----------|---------|----------------|
+| `~/.npmrc` (home del usuario) | Todos tus proyectos en esta maquina | Recomendada: la configuras una vez y listo |
+| `.npmrc` en la raiz del proyecto | Solo ese proyecto | Si el equipo quiere fijar el registro por proyecto (el archivo ya esta en `.gitignore`, nunca se commitea con el token real) |
+
+**3. Completar el token** — dos formas, elige una:
+
+```ini
+# Opcion recomendada: variable de entorno (el token nunca queda escrito en disco)
+@idsanchezf:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+```
+
+```powershell
+# Definir la variable antes de instalar (PowerShell). En bash/zsh: export GITHUB_TOKEN=ghp_xxx
+$env:GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxx"
+```
+
+```ini
+# Opcion simple: pegar el token literal directamente en .npmrc (menos seguro, no requiere variable de entorno)
+@idsanchezf:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=ghp_xxxxxxxxxxxxxxxxxxxx
+```
+
+**4. Verificar que funciona**
+
+```powershell
+npm view @idsanchezf/harness-engineering version
+```
+
+Si devuelve una version (ej. `0.1.0`), la autenticacion quedo bien configurada.
+
+**Errores comunes**
+
+| Error | Causa probable |
+|-------|-----------------|
+| `404 Not Found` | Falta la linea `@idsanchezf:registry=...` en `.npmrc`, o el `.npmrc` no esta en `~/.npmrc` ni en el directorio desde donde corres el comando |
+| `403 Forbidden` / `401 Unauthorized` | Token invalido, expirado, o sin el scope `read:packages` |
+| `GITHUB_TOKEN` vacio en el error | La variable de entorno no quedo exportada en la sesion actual de la terminal |
+
+> **Nunca** commitees un `.npmrc` con el token pegado literalmente. El `.npmrc` de la raiz de este repo ya esta en `.gitignore` por esta razon.
+
+### Opcion A: `npx` (recomendada)
 
 ```powershell
 npx @idsanchezf/harness-engineering mi-proyecto
