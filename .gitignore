@@ -1,1 +1,6 @@
 .graphify/
+
+# tooling del paquete npm (desarrollo local del CLI, no del contenido de la plantilla)
+node_modules/
+*.tgz
+.npmrc

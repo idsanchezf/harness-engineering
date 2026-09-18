@@ -1,0 +1,10 @@
+# Copia este archivo a .npmrc (en la raiz de tu proyecto, o en tu ~/.npmrc para todos tus proyectos)
+# y reemplaza ${GITHUB_TOKEN} por tu Personal Access Token de GitHub con scope "read:packages"
+# (Settings -> Developer settings -> Personal access tokens -> Tokens classic -> Generate new token).
+#
+# Tambien puedes dejarlo tal cual y exportar la variable de entorno GITHUB_TOKEN antes de instalar:
+#   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx   (bash)
+#   $env:GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxx" (PowerShell)
+
+@idsanchezf:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}

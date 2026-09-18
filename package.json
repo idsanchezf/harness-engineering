@@ -1,0 +1,43 @@
+{
+  "name": "@idsanchezf/harness-engineering",
+  "version": "0.1.0",
+  "description": "Plantilla de orquestacion de agentes de IA (opencode) para el ciclo de vida completo de software.",
+  "license": "MIT",
+  "author": "idsanchezf",
+  "bin": {
+    "harness-engineering": "bin/cli.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    ".opencode/agents/",
+    ".opencode/skills/",
+    ".opencode/package.json",
+    ".opencode/package-lock.json",
+    "templates/",
+    "AGENTS.md",
+    "opencode.json",
+    ".harness-state.json"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/idsanchezf/harness-engineering.git"
+  },
+  "keywords": [
+    "opencode",
+    "ai-agents",
+    "scaffold",
+    "sdlc",
+    "harness"
+  ],
+  "dependencies": {
+    "figlet": "^1.11.4",
+    "picocolors": "^1.0.1"
+  }
+}
