@@ -152,16 +152,28 @@ npx @idsanchezf/harness-engineering mi-proyecto
 cd mi-proyecto
 ```
 
-El comando muestra un banner con la version instalada y el estado de cada CLI de agentes en tu PATH (ver [Soporte multi-CLI](#soporte-multi-cli)), copia la plantilla al directorio indicado y termina — no queda instalado como dependencia del proyecto.
+El comando muestra un banner con la version instalada y el estado de cada CLI de agentes en tu PATH (ver [Soporte multi-CLI](#soporte-multi-cli)), y **solo copia la configuracion del/los CLI que elijas** — no instala ambos por defecto salvo que asi lo pidas:
+
+- En una terminal interactiva, sin `--agent`, te pregunta cual(es) usar (estilo "selecciona tu personaje": `[1] opencode`, `[2] claude`, `[3] Todos`)
+- En scripts/CI (sin terminal interactiva) o con `--yes`, instala todos los soportados por defecto, salvo que pases `--agent` explicitamente
+
+Termina despues de copiar — no queda instalado como dependencia del proyecto.
 
 Opciones:
 
 | Flag | Efecto |
 |------|--------|
-| `--yes` / `-y` | Continua aunque el directorio destino no este vacio |
+| `--agent <id>` | CLI(s) a instalar: `opencode`, `claude`, `opencode,claude`, o `all`. Omite el prompt interactivo |
+| `--yes` / `-y` | Continua aunque el directorio destino no este vacio; tambien omite el prompt (instala todos si no se paso `--agent`) |
 | `--force` / `-f` | Ademas de `--yes`, permite sobrescribir un `.harness-state.json` con progreso real |
 | `--version` / `-v` | Muestra la version instalada |
 | `--help` / `-h` | Muestra la ayuda |
+
+```powershell
+# Ejemplos
+npx @idsanchezf/harness-engineering mi-proyecto --agent claude
+npx @idsanchezf/harness-engineering mi-proyecto --agent opencode,claude
+```
 
 ### Opcion B: copia manual (sin npm)
 

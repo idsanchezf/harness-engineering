@@ -17,7 +17,10 @@ const PACKAGE_ROOT = path.join(__dirname, '..', '..', '..');
 // desarrollo del propio harness) deben mantenerse en sync a mano si cambian.
 const OPENCODE_GITIGNORE_CONTENT = ['node_modules', 'package.json', 'package-lock.json', '.gitignore', ''].join('\n');
 
-const REQUIRED_ENTRIES = ['.opencode/agents', '.opencode/skills', 'templates', 'AGENTS.md', 'opencode.json'];
+// "templates" y "AGENTS.md" son comunes a cualquier CLI y se copian de forma
+// incondicional desde cli.js, no desde este provider (ver copyCommonFiles en cli.js).
+// Aqui solo va lo exclusivo de opencode.
+const REQUIRED_ENTRIES = ['.opencode/agents', '.opencode/skills', 'opencode.json'];
 
 function copyEntry(entry, destDir) {
   const src = path.join(PACKAGE_ROOT, entry);
