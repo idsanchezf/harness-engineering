@@ -15,8 +15,6 @@
     "bin/",
     ".opencode/agents/",
     ".opencode/skills/",
-    ".opencode/package.json",
-    ".opencode/package-lock.json",
     "templates/",
     "AGENTS.md",
     "opencode.json",
