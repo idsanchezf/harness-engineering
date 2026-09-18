@@ -24,6 +24,8 @@
 
 ## 2. Cobertura
 
+> Umbrales definidos en `docs/inception/quality-tooling.md` (fuente canonica).
+
 | Capa | Cobertura | Umbral | Cumple |
 |------|-----------|--------|--------|
 | Domain | {N}% | 80% | Si / No |

@@ -188,6 +188,7 @@ Solo UNA fase de inception puede estar `in_progress` a la vez. Las fases son sec
    - Solo `leader` puede ordenar transiciones de fase
    - Ninguna feature puede iniciar hasta que `inception.status` sea `completed` y `inception.approved` sea `true`
    - Ninguna HU puede iniciar `develop` hasta que `design` de la feature este completada
+   - Rechazo HITL de una fase (`hitl reject`): la fase vuelve de `completed`/`in_progress` a **`in_progress`**, se conserva su `startedAt` original, y se agrega/actualiza `lastRejection: { "motivo": "...", "at": "..." }` en el objeto de esa fase. No existe un estado `rejected` propio: el rechazo es una transicion, no un estado final
 
 4. **Human in the Loop (HITL)**
    - Cuando `humanInTheLoop` es `true`, cada fase (feature y HU) requiere aprobacion explicita del usuario antes de avanzar
@@ -244,6 +245,16 @@ Como subagente, el lider te invocara con instrucciones como:
 - `hu block F001 US-001 motivo="..."` — bloquear HU
 - `hu list F001` — listar HUs de una feature con su estado y fase actual
 
+### Comandos de release
+
+- `release start {version}` — crea rama `release/{version}` desde `develop` (ej. `release/1.2.0`)
+- `release complete {version}` — mergea `release/{version}` a `main` con tag `{version}`, luego mergea `main` de vuelta a `develop` para mantenerlas sincronizadas, y elimina la rama `release/*`
+
+### Comandos de hotfix
+
+- `hotfix start {slug}` — crea rama `hotfix/{slug}` desde `main` (ej. `hotfix/fix-login-timeout`)
+- `hotfix complete {slug}` — mergea `hotfix/{slug}` a `main` con un tag patch, luego mergea `main` de vuelta a `develop`, y elimina la rama `hotfix/*`
+
 ### Comandos HITL
 
 - `hitl enable` — activa `humanInTheLoop = true`
@@ -252,8 +263,9 @@ Como subagente, el lider te invocara con instrucciones como:
 - `hitl approve {featureId} {fase}` — aprueba fase de feature
 - `hitl approve {featureId} {huId} {fase}` — aprueba fase de HU
 - `hitl approve inception` — aprueba inception
-- `hitl reject {featureId} {fase} motivo="..."` — rechaza fase de feature
-- `hitl reject {featureId} {huId} {fase} motivo="..."` — rechaza fase de HU
+- `hitl reject {featureId} {fase} motivo="..."` — rechaza fase de feature: la fase **vuelve a `in_progress`** (no a `pending`, para no perder avance), y se registra `lastRejection: { motivo, at }` en esa fase. El subagente debe reintentar la fase incorporando el motivo antes de que el leader vuelva a pedir aprobacion
+- `hitl reject {featureId} {huId} {fase} motivo="..."` — mismo comportamiento para una fase de HU
+- `hitl reject inception {fase} motivo="..."` — mismo comportamiento para una fase de inception
 
 ### Comandos de tasks (por HU)
 
@@ -346,6 +358,56 @@ git checkout develop
 git pull origin develop
 git branch -d feature/F001-registro-usuarios-oauth2
 ```
+
+### Rama release
+
+Al ejecutar `release start 1.2.0`:
+
+```bash
+git checkout develop
+git pull origin develop
+git checkout -b release/1.2.0
+```
+
+Al ejecutar `release complete 1.2.0`:
+
+```bash
+git checkout main
+git pull origin main
+git merge --no-ff release/1.2.0
+git tag 1.2.0
+git push origin main --tags
+git checkout develop
+git merge --no-ff main
+git push origin develop
+git branch -d release/1.2.0
+```
+
+### Rama hotfix
+
+Al ejecutar `hotfix start fix-login-timeout`:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b hotfix/fix-login-timeout
+```
+
+Al ejecutar `hotfix complete fix-login-timeout`:
+
+```bash
+git checkout main
+git pull origin main
+git merge --no-ff hotfix/fix-login-timeout
+git tag {siguiente-patch}
+git push origin main --tags
+git checkout develop
+git merge --no-ff main
+git push origin develop
+git branch -d hotfix/fix-login-timeout
+```
+
+Estas operaciones sobre `main`/`develop` siguen requiriendo PR + CI verde en el flujo real (ver "Reglas de integridad del flujo" en `AGENTS.md`); los comandos de merge directo aqui documentados asumen que el PR ya fue aprobado, igual que `hu merge`/`feature merge`.
 
 ## Tasks — Checklist de implementacion por HU
 
@@ -441,6 +503,7 @@ docs/
 
 ## Reglas de integridad
 
+- **Escrituras serializadas**: `.harness-state.json` es un archivo unico compartido. El `leader` NUNCA debe invocarte con dos operaciones de escritura simultaneas (dos `phase start`, `phase complete`, `hu create`, etc. en paralelo). Aunque el trabajo de los subagentes ejecutores (`develop`, `test`, `quality`, `deploy`) si se paraleliza, cada llamada tuya que escribe estado debe completarse (y su resultado confirmarse al leader) antes de que el leader dispare la siguiente escritura. Si detectas que el archivo cambio desde tu ultima lectura (recarga te lo revela), vuelve a aplicar tu cambio sobre la version mas reciente en vez de sobrescribir a ciegas
 - Antes de cada operacion de escritura, recargas `.harness-state.json` para evitar race conditions
 - Actualizas `updatedAt` en cada cambio
 - Si `.harness-state.json` no existe, asumes proyecto nuevo y creas la plantilla inicial con `inception: { status: "pending", approved: false, phases: { context: { status: "pending" }, discovery: { status: "pending" }, ddd: { status: "pending" }, architecture: { status: "pending" }, scaffold: { status: "pending" }, environments: { status: "pending" } } }` y `features: []`

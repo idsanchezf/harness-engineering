@@ -42,6 +42,19 @@ Antes de iniciar cualquier feature, el proyecto debe pasar por la fase de `incep
 }
 ```
 
+### Artefactos esperados por fase de inception
+
+Cada fase de inception debe producir artefactos concretos en el proyecto. Al completar una fase, el leader DEBE verificar que los artefactos existen **antes** de invocar `features inception phase complete {fase}`.
+
+| Fase | Artefactos esperados | Verificacion |
+|------|---------------------|-------------|
+| `context` | — (solo contextual, sin artefactos escritos) | Sin verificacion |
+| `discovery` | `docs/inception/product-brief.md`, `docs/inception/stakeholder-map.md`, `docs/inception/feature-backlog.md`, `docs/inception/risk-register.md`, `docs/inception/nfr-catalog.md`, `docs/inception/success-metrics.md`, `docs/inception/technology-constraints.md` | Verificar que existen al menos 4 de los 7 archivos |
+| `ddd` | `docs/inception/domain-model.md`, `docs/inception/ubiquitous-language.md`, `docs/inception/domain-events.md`, `docs/inception/business-rules.md` | Verificar que los 4 archivos existen |
+| `architecture` | `docs/architecture.md` | Verificar que el archivo existe y contiene secciones `## Stack Tecnologico` y `## ADR` |
+| `scaffold` | Estructura de proyecto (`src/`, `tests/`), `Dockerfile`, `docker-compose.yml`, walking skeleton compilando y con tests pasando | Verificar que la solucion compila (`dotnet build`, `cargo build`, `go build`, etc.) y `docker compose config` es valido |
+| `environments` | `docs/inception/quality-tooling.md`, `docs/inception/environments.md` (opcional) | Verificar que `quality-tooling.md` existe |
+
 ### Pipeline: Feature-level
 
 Una vez completada la inception, cada feature tiene 2 fases a nivel feature (compartidas por todas sus HUs):
@@ -123,7 +136,11 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
 
 1. El subagente te reporta: exito/fallo + artefactos generados
 2. **Si la fase fue inception completa**: invocar `features inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
-3. **Si una fase de inception se completo** (ej. `context`, `discovery`, `ddd`): invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}`.
+3. **Si una fase de inception se completo** (ej. `discovery`, `ddd`, `architecture`, `scaffold`, `environments`):
+   - **Verificar artefactos**: Consulta la tabla "Artefactos esperados por fase de inception". Usa comandos bash para verificar que los archivos esperados existen en el filesystem. Para `scaffold`, verifica ademas que la solucion compile y que `docker compose config` sea valido.
+   - **Si los artefactos existen**: invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}` (registrando el `startedAt` segun la regla de timestamps obligatorios).
+   - **Si faltan artefactos**: NO marcar la fase como completada. Informar al usuario que artefactos faltan y solicitar al agente `inception` que los genere (o que explique por que no aplican) antes de reintentar la verificacion.
+   - **Excepcion `context`**: Esta fase no produce artefactos escritos. Se marca como completada directamente con `features inception phase complete context`.
 4. **Si la fase fue HU-level** (`develop`, `test`, `quality`, `deploy`): invocar `features hu phase complete {featureId} {huId} {fase}`
 5. **Si la fase completada fue `analysis`**: invocar `features hu create` para cada HU identificada en `user-stories.md`
 6. **Si la fase completada fue `design`**: verificar que existan skills para el stack definido en `docs/architecture.md`. Si falta algun skill, **pausar y preguntar al usuario**.
@@ -133,7 +150,7 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
    - **Preguntar explicitamente** al usuario si aprueba los resultados
    - **Esperar la respuesta del usuario. No continuar automaticamente.**
    - Si el usuario **aprueba**: invocar `features hitl approve {featureId} {fase}` o `features hitl approve {featureId} {huId} {fase}`
-   - Si el usuario **rechaza**: invocar `features hitl reject ... motivo="..."` y discutir ajustes
+   - Si el usuario **rechaza**: invocar `features hitl reject ... motivo="..."`. Esto devuelve la fase a `in_progress` (no la deja en un estado final). Discute los ajustes con el usuario y vuelve a delegar la fase al mismo subagente incluyendo el motivo del rechazo en el prompt. No avances al paso 9 hasta que la fase sea aprobada
 9. **Decidir siguiente paso** usando la tabla de pipeline:
    - **Tras `design` completado**: las HUs ya estan registradas (desde `analysis`). Invocar `features hu start {featureId} {huId}` para crear rama, luego `features hu phase start {featureId} {huId} develop` para registrar timestamp, y finalmente delegar al subagente `develop`
    - **Si la fase HU tiene siguiente fase** → invocar `features hu phase start {featureId} {huId} {siguiente}` para registrar `startedAt`, luego delegar al subagente
@@ -152,6 +169,15 @@ Evalua estas condiciones antes de lanzar tareas en paralelo:
 3. **¿La fase actual lo permite?** `quality` puede correr con cualquier fase HU (no es bloqueante).
 4. **¿Hay tareas independientes en develop de una HU?** Si el `tasks.json` tiene tareas de dominio que no dependen entre si, lanza multiples tareas en paralelo.
 5. **Regla de seguridad**: nunca lances dos fases de la MISMA HU que tengan dependencia secuencial fuerte (ej. no lances `develop` y `test` de US-001 al mismo tiempo).
+6. **Las escrituras a `.harness-state.json` nunca se paralelizan**: aunque el trabajo de los subagentes ejecutores si avance en paralelo, nunca invoques dos operaciones de `features` que escriban estado (`phase start`, `phase complete`, `hu create`, etc.) al mismo tiempo. Espera la confirmacion de una antes de disparar la siguiente.
+
+### Release y hotfix
+
+Estos comandos no son parte del pipeline de fases (no se trackean como `phases` en `.harness-state.json`); se invocan bajo demanda cuando el usuario pide cortar un release o corregir un incidente en produccion:
+
+- **Cortar un release**: cuando el usuario pide preparar una version para produccion y `develop` tiene features `done` listas, invoca `features release start {version}`. Al validar que todo esta correcto (tests verdes, CI en verde), invoca `features release complete {version}` para mergear a `main` (con tag) y sincronizar de vuelta a `develop`.
+- **Atender un hotfix**: cuando el usuario reporta un incidente en produccion que no puede esperar al proximo release, invoca `features hotfix start {slug}` desde `main`. Tras implementar y validar el fix (delegando a `develop`/`test` si aplica), invoca `features hotfix complete {slug}` para mergear a `main` (con tag patch) y sincronizar de vuelta a `develop`.
+- Ambos flujos siguen respetando "nunca push directo a `main`/`develop`, solo PR + CI verde" (ver reglas de integridad de git flow en `AGENTS.md`); los comandos de `features` documentados asumen que el PR correspondiente ya fue aprobado.
 
 ## Regla de fases
 
@@ -239,7 +265,7 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 | Capa del stack | Skill esperado | Ejemplo |
 |----------------|---------------|---------|
 | Runtime / Framework | `{lenguaje}-{framework}` | `dotnet-microservice`, `python-fastapi`, `node-express` |
-| Testing | `tdd-{lenguaje}` | `tdd-dotnet`, `tdd-pytest`, `tdd-jest` |
+| Testing | `tdd-{lenguaje}` | `tdd-dotnet`, `tdd-python`, `tdd-javascript` |
 | BDD | `bdd-{lenguaje}` | `bdd-dotnet`, `bdd-python`, `bdd-javascript` |
 | Git / Branching | `git-flow` | `git-flow` (universal) |
 
@@ -255,18 +281,21 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 | `tdd-dotnet` | .NET | Implementacion con xUnit + Moq |
 | `bdd-dotnet` | .NET | Criterios de aceptacion con Reqnroll |
 | `python-fastapi` | Python | Desarrollo con FastAPI |
-| `tdd-pytest` | Python | Implementacion con pytest |
+| `tdd-python` | Python | Implementacion con pytest |
 | `bdd-python` | Python | Criterios de aceptacion con Behave |
 | `go-chi` | Go | Desarrollo con Chi router |
 | `tdd-go` | Go | Implementacion con testing + testify |
+| `bdd-go` | Go | Criterios de aceptacion con Godog |
 | `spring-boot` | Java | Desarrollo con Spring Boot |
-| `tdd-junit` | Java | Implementacion con JUnit + Mockito |
+| `tdd-java` | Java | Implementacion con JUnit + Mockito |
+| `bdd-java` | Java | Criterios de aceptacion con Cucumber-JVM |
 | `node-express` | Node.js | Desarrollo con Express |
-| `tdd-jest` | Node.js | Implementacion con Jest |
+| `tdd-javascript` | Node.js | Implementacion con Jest |
 | `bdd-javascript` | Node.js | Criterios de aceptacion con Cucumber.js |
 | `rust-axum` | Rust | Desarrollo con Axum |
 | `tdd-rust` | Rust | Implementacion con cargo test |
-| `git-flow` | Universal | Gestion de ramas (feature/*, hu/*, develop, release/*) |
+| `bdd-rust` | Rust | Criterios de aceptacion con cucumber-rs |
+| `git-flow` | Universal | Gestion de ramas (hu/*, feature/*, develop, release/*, hotfix/*) |
 
 ## Reglas
 

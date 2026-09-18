@@ -106,6 +106,8 @@
           "approved": true,
           "startedAt": "2026-05-26T03:00:00Z",
           "completedAt": "2026-05-26T04:00:00Z"
+          // Si esta fase hubiera sido rechazada por HITL en un intento previo, tendria ademas:
+          // "lastRejection": { "motivo": "Falta contrato de error 409 en api-contract.yaml", "at": "2026-05-26T03:40:00Z" }
         }
       },
 
@@ -192,6 +194,7 @@ Estas fases permiten retomar inception desde donde se quedo si la sesion se inte
 | `features[].status` | `pending`, `in_progress`, `in_review`, `done`, `blocked` |
 | `features[].phases.{fase}.status` | `pending`, `in_progress`, `completed`, `blocked` |
 | `features[].phases.{fase}.approved` | `true`, `false` |
+| `features[].phases.{fase}.lastRejection` | Opcional: `{ "motivo": string, "at": ISO8601 }`. Presente solo si esa fase tuvo un `hitl reject`. No existe un estado `rejected`: un rechazo devuelve `status` a `in_progress` |
 
 ### HU
 
@@ -200,3 +203,4 @@ Estas fases permiten retomar inception desde donde se quedo si la sesion se inte
 | `userStories[].status` | `pending`, `in_progress`, `in_review`, `done`, `blocked` |
 | `userStories[].phases.{fase}.status` | `pending`, `in_progress`, `completed`, `blocked` |
 | `userStories[].phases.{fase}.approved` | `true`, `false` |
+| `userStories[].phases.{fase}.lastRejection` | Opcional: `{ "motivo": string, "at": ISO8601 }`, mismo comportamiento que en fases de feature |

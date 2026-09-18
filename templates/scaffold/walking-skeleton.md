@@ -138,7 +138,7 @@ public class InMemoryGreetingRepository : IGreetingRepository
 
 ---
 
-## Stack: Python (python-fastapi + tdd-pytest + bdd-python)
+## Stack: Python (python-fastapi + tdd-python + bdd-python)
 
 ### Funcionalidad sugerida
 
@@ -276,7 +276,7 @@ go test ./...
 
 ---
 
-## Stack: Java (spring-boot + tdd-junit)
+## Stack: Java (spring-boot + tdd-java)
 
 ### Funcionalidad sugerida
 
@@ -338,7 +338,7 @@ src/test/java/com/example/greetingservice/
 
 ---
 
-## Stack: Node.js (node-express + tdd-jest + bdd-javascript)
+## Stack: Node.js (node-express + tdd-javascript + bdd-javascript)
 
 ### Funcionalidad sugerida
 

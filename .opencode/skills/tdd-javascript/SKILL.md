@@ -1,6 +1,6 @@
 ---
-name: tdd-jest
-description: Test-Driven Development para JavaScript/TypeScript con Jest. Usar cuando se implemente codigo nuevo o se modifique existente. Ciclo RED-GREEN-REFACTOR con persistencia automatica del progreso en .harness-state.json. Organizacion: una carpeta por clase, un archivo por metodo con todos sus escenarios, nombramiento Gherkin y patron AAA.
+name: tdd-javascript
+description: Test-Driven Development para JavaScript/TypeScript con Jest. Usar cuando se implemente codigo nuevo o se modifique existente. Ciclo RED-GREEN-REFACTOR resiliente a interrupciones via tasks.json (el progreso TDD en si no se persiste en .harness-state.json). Organizacion: una carpeta por clase, un archivo por metodo con todos sus escenarios, nombramiento Gherkin y patron AAA.
 ---
 
 # TDD — Test-Driven Development para Node.js (Jest)
@@ -129,6 +129,16 @@ npx jest tests/unit/application/orders/create-order-handler.test.ts
 npx jest tests/unit/
 # → VERDE: todos pasan
 ```
+
+## Resiliencia entre sesiones
+
+El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `features hu phase start/complete`). Si la sesion se interrumpe a mitad de un ciclo:
+
+1. Al retomar, `develop` relee el `tasks.json` de la HU para identificar que tarea estaba `in_progress`.
+2. Ejecuta `npx jest {archivo}.test.ts` de esa tarea para determinar en que estado quedo: si hay un `test()` fallando, retoma en RED/GREEN sobre ese escenario; si todos los existentes pasan, retoma en REFACTOR o continua con el siguiente escenario.
+3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `features task start`/`features task done`.
+
+El codigo y los tests existentes son siempre la fuente de verdad del punto exacto donde quedo el ciclo TDD.
 
 ## Herramientas
 

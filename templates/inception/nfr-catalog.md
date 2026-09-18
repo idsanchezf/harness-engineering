@@ -66,7 +66,6 @@
 
 | NFR | Objetivo | Estrategia |
 |-----|----------|------------|
-| Cobertura de pruebas | > 80% dominio, > 70% aplicacion | CI/CD bloqueante |
-| Complejidad ciclomatica | < 10 por metodo | Linter en CI |
+| Cobertura de pruebas y complejidad ciclomatica | Ver umbrales canonicos en `docs/inception/quality-tooling.md` | CI/CD bloqueante + Linter en CI |
 | Documentacion | API documentada con OpenAPI/Swagger | Generacion automatica |
 | Versionado | Versionado semantico (MAJOR.MINOR.PATCH) | Git tags |

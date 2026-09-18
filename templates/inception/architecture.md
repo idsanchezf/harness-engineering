@@ -166,7 +166,7 @@ C4Container
 - Unitarias: TDD con {framework} + mocking
 - Integracion: TestContainers para dependencias reales
 - Contract: Consumer-driven contract tests
-- Cobertura minima: 80% dominio, 70% aplicacion
+- Umbrales de cobertura: ver fuente canonica en `docs/inception/quality-tooling.md`
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: tdd-dotnet
-description: Test-Driven Development para .NET Core. Usar cuando se implemente codigo nuevo o se modifique existente. Ciclo RED-GREEN-REFACTOR con persistencia automatica del progreso en .harness-state.json para retomar tras interrupcion. Organizacion: una carpeta por clase, un archivo .cs por metodo con todos sus escenarios, nombramiento Gherkin y patron AAA.
+description: Test-Driven Development para .NET Core. Usar cuando se implemente codigo nuevo o se modifique existente. Ciclo RED-GREEN-REFACTOR resiliente a interrupciones via tasks.json (el progreso TDD en si no se persiste en .harness-state.json). Organizacion: una carpeta por clase, un archivo .cs por metodo con todos sus escenarios, nombramiento Gherkin y patron AAA.
 ---
 
 # TDD — Test-Driven Development para .NET Core
@@ -293,31 +293,15 @@ public class {Metodo}Tests
 }
 ```
 
-## Persistencia entre sesiones
+## Resiliencia entre sesiones
 
-El progreso TDD se guarda automaticamente en `.harness-state.json` via el subagente `features`. Si la sesion se corta, al reabrir el `leader` detecta el campo `tdd` y te indica exactamente donde retomar.
+El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `features hu phase start/complete`). Si la sesion se interrumpe a mitad de un ciclo:
 
-Cada vez que completas un paso del ciclo (RED, GREEN, REFACTOR), el agente `develop` invoca:
+1. Al retomar, `develop` relee el `tasks.json` de la HU (`docs/features/{id}-{slug}/US-{huId}/tasks.json`, ver `.opencode/agents/features.md`) para identificar que tarea estaba `in_progress`.
+2. Ejecuta `dotnet test --filter "FullyQualifiedName~{Clase}Tests"` de esa tarea para determinar en que estado quedo: si hay un `[Fact]` fallando, retoma en RED/GREEN sobre ese escenario; si todos los existentes pasan, retoma en REFACTOR o continua con el siguiente escenario del metodo.
+3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `features task start {featureId} {huId} {taskId}` / `features task done {featureId} {huId} {taskId}`.
 
-```
-@features tdd save F004 step=green class=CreateOrderHandler method=HandleAsync testFile=.../HandleAsyncTests.cs scenario=Should_ReturnError_When_ProductNotFound
-```
-
-Esto actualiza el campo `tdd` de la feature en `.harness-state.json`:
-
-```json
-"tdd": {
-  "step": "green",
-  "class": "CreateOrderHandler",
-  "method": "HandleAsync",
-  "testFile": "tests/.../HandleAsyncTests.cs",
-  "scenario": "Should_ReturnError_When_ProductNotFound",
-  "scenariosCompleted": ["Should_CreateOrder_When_CommandIsValid"],
-  "scenariosPending": ["Should_ReturnError_When_ProductNotFound", "Should_RollbackInventory_When_PaymentFails"]
-}
-```
-
-Al reabrir opencode, el `leader` reporta: _"Retomando F004 en HandleAsyncTests.cs, paso GREEN, escenario Should_ReturnError_When_ProductNotFound. Faltan 2 escenarios pendientes."_
+El codigo y los tests existentes son siempre la fuente de verdad del punto exacto donde quedo el ciclo TDD; no dependas de un campo transitorio en `.harness-state.json` que podria desincronizarse del codigo real.
 
 ## Herramientas
 

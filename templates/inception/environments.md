@@ -74,7 +74,9 @@ MessageBroker__Host=localhost
 | CDN | {CloudFront, Azure CDN, Cloud CDN} | — | 1 | Global |
 | DNS / SSL | {Route53 + ACM, Azure DNS, Cloud DNS} | — | 1 | — |
 
-### Estrategia de despliegue
+### Estrategia de despliegue (default del proyecto)
+
+> **Fuente canonica**: esta es la estrategia de despliegue por defecto del proyecto. El `deploy-config.md` de cada HU la hereda y solo documenta un override explicito si esa HU lo requiere (ej. una migracion de datos que exige una ventana de mantenimiento distinta).
 
 | Parametro | Valor |
 |-----------|-------|

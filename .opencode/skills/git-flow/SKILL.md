@@ -1,9 +1,9 @@
 ---
 name: git-flow
-description: Estrategia de branching Git Flow para microservicios .NET. Usar cuando se gestione el ciclo de ramas: feature/*, develop, release/*, hotfix/* y main. Cada feature se desarrolla en su propia rama.
+description: Estrategia de branching Git Flow, agnostica al stack tecnologico. Usar cuando se gestione el ciclo de ramas hu/*, feature/*, develop, release/*, hotfix/* y main. Cada HU y cada feature se desarrollan en su propia rama.
 ---
 
-# Git Flow para Microservicios .NET Core
+# Git Flow para Microservicios
 
 ## Ramas principales
 
@@ -16,28 +16,44 @@ develop       # Integracion continua (mergea desde feature/* y release/*)
 
 | Rama | Proposito | Nomenclatura | Se crea desde | Mergea a |
 |------|-----------|-------------|---------------|----------|
-| `feature/*` | Nueva funcionalidad | `feature/F001-crear-pedido` | `develop` | `develop` |
+| `hu/*` | Historia de usuario individual | `hu/F001-US-001-registro-google-oauth2` | `feature/*` | `feature/*` |
+| `feature/*` | Feature completa (agrupa sus HUs) | `feature/F001-crear-pedido` | `develop` | `develop` |
 | `release/*` | Preparar release | `release/1.0.0` | `develop` | `main` + `develop` |
-| `hotfix/*` | Correccion urgente | `hotfix/1.0.1-corregir-pago` | `main` | `main` + `develop` |
+| `hotfix/*` | Correccion urgente | `hotfix/fix-login-timeout` | `main` | `main` + `develop` |
 
-## Flujo de feature con arneses
+## Flujo con arneses
 
-Cuando `leader` invoca `features start F001`:
-
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/F001-crear-pedido
+```
+hu/* ──PR──▶ feature/* ──PR──▶ develop ──release/*──▶ main
+                                  ▲                     │
+                                  └──────hotfix/*────────┘
 ```
 
-El desarrollo se realiza en esta rama. Al completar la feature:
+Cuando el `leader` invoca `features hu start {featureId} {huId}`:
 
 ```bash
-git checkout develop
-git merge --no-ff feature/F001-crear-pedido
-git push origin develop
-git branch -d feature/F001-crear-pedido
+git checkout feature/F001-crear-pedido
+git checkout -b hu/F001-US-001-registro-google-oauth2
 ```
+
+Al completar la HU (`features hu complete {featureId} {huId}`), se hace push y se crea un PR hacia la rama `feature/*` (ver `.opencode/agents/features.md`). Tras aprobacion, `features hu merge {featureId} {huId}` mergea a la feature.
+
+Cuando todas las HUs de una feature estan `done`, `features feature complete {featureId}` crea el PR de la feature hacia `develop`.
+
+## Gate antes de mergear (agnostico al stack)
+
+Antes de completar cualquier PR (`hu complete`, `feature complete`, `release complete`, `hotfix complete`), se debe ejecutar el comando de tests y el de formato/lint **definidos en la skill del stack activo del proyecto** (columna `Skill` de `docs/architecture.md`), no un comando fijo de un lenguaje en particular. Ejemplos segun stack:
+
+| Skill de stack | Comando de test | Comando de formato/lint |
+|-----------------|-----------------|--------------------------|
+| `dotnet-microservice` | `dotnet test` | `dotnet format --verify-no-changes` |
+| `python-fastapi` | `pytest` | `ruff check .` |
+| `node-express` | `npm test` | `npm run lint` |
+| `go-chi` | `go test ./...` | `gofmt -l .` |
+| `spring-boot` | `mvn test` (o `gradle test`) | `mvn spotless:check` |
+| `rust-axum` | `cargo test` | `cargo fmt --check` |
+
+Si el stack del proyecto no aparece en esta tabla, usa el comando de test/format documentado en su propia skill (`.opencode/skills/{skill-del-stack}/SKILL.md`).
 
 ## Convenciones de commit
 
@@ -51,9 +67,10 @@ docs: actualizar architecture.md con ADR-003
 
 ## Reglas
 
-- `main` nunca recibe commits directos
-- `develop` nunca recibe commits directos (solo merges)
-- Cada feature tiene su propia rama `feature/{id}-{slug}`
-- Usar `--no-ff` al mergear features para preservar historial
-- Eliminar la rama feature despues del merge exitoso
-- Antes de mergear a `develop`, ejecutar `dotnet test` y `dotnet format --verify-no-changes`
+- `main` y `develop` nunca reciben commits directos, solo merges via PR con CI en verde
+- Cada HU tiene su propia rama `hu/{featureId}-{huId}-{slug}` creada desde la rama de su feature
+- Cada feature tiene su propia rama `feature/{id}-{slug}` creada desde `develop`
+- Usar `--no-ff` al mergear para preservar historial
+- Eliminar la rama (`hu/*`, `feature/*`, `release/*`, `hotfix/*`) despues del merge exitoso
+- Nunca mergear `main` → `develop` fuera del flujo de `release/*`/`hotfix/*` (si `main` tiene codigo que `develop` no tiene, el flujo esta roto)
+- Antes de completar un PR, ejecutar el comando de test y de formato/lint del stack activo (ver tabla de gate arriba)

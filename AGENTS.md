@@ -100,7 +100,7 @@ develop → test → quality → deploy
       SKILL.md
     python-fastapi/        # Convenciones Python + FastAPI
       SKILL.md
-    tdd-pytest/            # TDD para Python (pytest)
+    tdd-python/            # TDD para Python (pytest)
       SKILL.md
     bdd-python/            # BDD para Python (Behave)
       SKILL.md
@@ -108,19 +108,25 @@ develop → test → quality → deploy
       SKILL.md
     tdd-go/                # TDD para Go (testing + testify)
       SKILL.md
+    bdd-go/                # BDD para Go (Godog)
+      SKILL.md
     spring-boot/           # Convenciones Java + Spring Boot
       SKILL.md
-    tdd-junit/             # TDD para Java (JUnit 5 + Mockito)
+    tdd-java/              # TDD para Java (JUnit 5 + Mockito)
+      SKILL.md
+    bdd-java/              # BDD para Java (Cucumber-JVM)
       SKILL.md
     node-express/          # Convenciones Node.js + Express
       SKILL.md
-    tdd-jest/              # TDD para Node.js (Jest)
+    tdd-javascript/        # TDD para Node.js (Jest)
       SKILL.md
     bdd-javascript/        # BDD para Node.js (Cucumber.js)
       SKILL.md
     rust-axum/             # Convenciones Rust + Axum
       SKILL.md
     tdd-rust/              # TDD para Rust (cargo test)
+      SKILL.md
+    bdd-rust/              # BDD para Rust (cucumber-rs)
       SKILL.md
     git-flow/              # Estrategia de branching (universal)
       SKILL.md
@@ -161,20 +167,23 @@ Los skills se activan automaticamente segun el contexto:
 |-------|-----------------|
 | `tdd-dotnet` | Implementacion de nueva funcionalidad en .NET (RED-GREEN-REFACTOR con xUnit + Moq) |
 | `bdd-dotnet` | Definicion de criterios de aceptacion en .NET (Gherkin + Reqnroll) |
-| `git-flow` | Gestion de ramas y versionado (feature/*, hu/*, develop, release/*) |
+| `git-flow` | Gestion de ramas y versionado (hu/*, feature/*, develop, release/*, hotfix/*) |
 | `dotnet-microservice` | Cualquier tarea que requiera convenciones de stack .NET, estructura y patrones |
 | `python-fastapi` | Desarrollo con Python + FastAPI (convenciones, estructura, patrones) |
-| `tdd-pytest` | Implementacion con TDD en Python usando pytest |
+| `tdd-python` | Implementacion con TDD en Python usando pytest |
 | `bdd-python` | Criterios de aceptacion en Python con Gherkin + Behave |
 | `go-chi` | Desarrollo con Go + Chi (convenciones, estructura, patrones) |
 | `tdd-go` | Implementacion con TDD en Go (testing + testify) |
+| `bdd-go` | Criterios de aceptacion en Go con Gherkin + Godog |
 | `spring-boot` | Desarrollo con Java + Spring Boot (convenciones, estructura, patrones) |
-| `tdd-junit` | Implementacion con TDD en Java (JUnit 5 + Mockito) |
+| `tdd-java` | Implementacion con TDD en Java (JUnit 5 + Mockito) |
+| `bdd-java` | Criterios de aceptacion en Java con Gherkin + Cucumber-JVM |
 | `node-express` | Desarrollo con Node.js + Express (convenciones, estructura, patrones) |
-| `tdd-jest` | Implementacion con TDD en Node.js (Jest) |
+| `tdd-javascript` | Implementacion con TDD en Node.js (Jest) |
 | `bdd-javascript` | Criterios de aceptacion en Node.js con Cucumber.js |
 | `rust-axum` | Desarrollo con Rust + Axum (convenciones, estructura, patrones) |
 | `tdd-rust` | Implementacion con TDD en Rust (cargo test) |
+| `bdd-rust` | Criterios de aceptacion en Rust con Gherkin + cucumber-rs |
 
 ### Resolucion de skills por stack
 
@@ -185,8 +194,8 @@ La columna `Skill` en la tabla de stack de `docs/architecture.md` permite el map
 | Capa | Skill esperado | Ejemplos |
 |------|---------------|---------|
 | Runtime / Framework | `{lenguaje}-{framework}` | `dotnet-microservice`, `python-fastapi`, `node-express`, `go-chi`, `spring-boot`, `rust-axum` |
-| TDD | `tdd-{lenguaje}` | `tdd-dotnet`, `tdd-pytest`, `tdd-jest`, `tdd-go`, `tdd-junit`, `tdd-rust` |
-| BDD | `bdd-{lenguaje}` | `bdd-dotnet`, `bdd-python`, `bdd-javascript` |
+| TDD | `tdd-{lenguaje}` | `tdd-dotnet`, `tdd-python`, `tdd-javascript`, `tdd-go`, `tdd-java`, `tdd-rust` |
+| BDD | `bdd-{lenguaje}` | `bdd-dotnet`, `bdd-python`, `bdd-javascript`, `bdd-go`, `bdd-java`, `bdd-rust` |
 | Git | `git-flow` | `git-flow` (universal, aplica a todos los stacks) |
 
 ## Comandos de gestion
@@ -229,6 +238,17 @@ Fases de inception: `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `
 @features hu phase complete F001 US-001 develop     # Marcar fase HU como completada
 @features hu phase start F001 US-001 test           # Iniciar siguiente fase HU
 ```
+
+### Release y Hotfix
+
+```
+@features release start 1.2.0             # Crea rama release/1.2.0 desde develop
+@features release complete 1.2.0          # Mergea a main (tag) y sincroniza de vuelta a develop
+@features hotfix start fix-login-timeout  # Crea rama hotfix/{slug} desde main
+@features hotfix complete fix-login-timeout # Mergea a main (tag) y sincroniza de vuelta a develop
+```
+
+No forman parte del pipeline de fases (no se trackean en `.harness-state.json` como `phases`); se invocan bajo demanda para cortar una version o atender un incidente en produccion. Siguen las mismas reglas de integridad de git flow: solo PR + CI verde hacia `main`/`develop`.
 
 ### Tareas (por HU)
 
@@ -323,6 +343,8 @@ Inception se trackea en la raiz con sus 6 fases internas. Cada feature tiene su 
 | `in_progress` | El subagente correspondiente esta trabajando |
 | `completed` | Finalizada con exito |
 | `blocked` | Detenida por dependencia externa |
+
+No existe un estado `rejected` separado: un `hitl reject` devuelve la fase de `completed`/`in_progress` a **`in_progress`** (conservando el `startedAt` original) y agrega `lastRejection: { "motivo": "...", "at": "..." }` al objeto de esa fase. El leader debe re-delegar la fase al subagente correspondiente incluyendo ese motivo antes de volver a pedir aprobacion.
 
 **Fases de inception (6 fases internas):** `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `environments`
 

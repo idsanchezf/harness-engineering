@@ -7,6 +7,8 @@
 
 # Configuracion de Tooling de Calidad y Seguridad: {Nombre del Proyecto}
 
+> **Fuente canonica de umbrales**: los umbrales de cobertura, complejidad y severidad de vulnerabilidades de este documento son la referencia unica del proyecto. `nfr-catalog.md`, `architecture.md`, `environments.md` y `deploy-config.md` (por HU) **no duplican** estos valores: los referencian desde aqui. Si un umbral cambia, se actualiza solo en este archivo.
+
 ## 1. Linter y Formateador
 
 | Herramienta | Stack | Proposito | Configuracion | CI/CD |
@@ -32,11 +34,14 @@
 
 | Metrica | Umbral | Accion si no cumple |
 |---------|--------|---------------------|
-| Cobertura de pruebas | > 70% | Bloquear PR |
+| Cobertura de pruebas — capa dominio | > 80% | Bloquear PR |
+| Cobertura de pruebas — capa aplicacion | > 70% | Bloquear PR |
+| Cobertura de pruebas — resto (infra, api) | > 60% | Advertencia |
 | Duplicacion de codigo | < 3% | Advertencia |
 | Issues criticos | 0 | Bloquear PR |
 | Issues mayores | < 5 | Advertencia |
-| Complejidad ciclomatica | < 10 | Advertencia |
+| Complejidad ciclomatica (por metodo) | < 10 | Advertencia |
+| Lineas por archivo | < 300 | Advertencia |
 
 ---
 

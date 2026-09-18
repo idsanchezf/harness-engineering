@@ -226,10 +226,13 @@ spec:
 
 ## 7. Estrategia de despliegue
 
-| Parametro | Valor |
-|-----------|-------|
-| Estrategia | {Blue-green / Canary / Rolling update} |
-| Health check grace period | {N} segundos |
-| Timeout de despliegue | {N} minutos |
-| Rollback automatico | Si — condicion: {health check falla, tasa de error > 1%} |
-| Rollback manual | `{rollback-command}` |
+Esta HU sigue la estrategia de despliegue por defecto del proyecto, definida en `docs/inception/environments.md` (seccion "Estrategia de despliegue"). Solo se documenta aqui si esta HU requiere un **override**:
+
+| Parametro | Valor por defecto | Override para esta HU (si aplica) |
+|-----------|--------------------|-----------------------------------|
+| Estrategia | (ver `environments.md`) | {solo si difiere} |
+| Health check grace period | (ver `environments.md`) | {solo si difiere} |
+| Timeout de despliegue | (ver `environments.md`) | {solo si difiere} |
+| Rollback | (ver `environments.md`) | {solo si difiere} |
+
+Comando de rollback manual especifico de esta HU (si aplica): `{rollback-command}`
