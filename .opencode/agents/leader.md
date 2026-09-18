@@ -177,7 +177,7 @@ Estos comandos no son parte del pipeline de fases (no se trackean como `phases` 
 
 - **Cortar un release**: cuando el usuario pide preparar una version para produccion y `develop` tiene features `done` listas, invoca `features release start {version}`. Al validar que todo esta correcto (tests verdes, CI en verde), invoca `features release complete {version}` para mergear a `main` (con tag) y sincronizar de vuelta a `develop`.
 - **Atender un hotfix**: cuando el usuario reporta un incidente en produccion que no puede esperar al proximo release, invoca `features hotfix start {slug}` desde `main`. Tras implementar y validar el fix (delegando a `develop`/`test` si aplica), invoca `features hotfix complete {slug}` para mergear a `main` (con tag patch) y sincronizar de vuelta a `develop`.
-- Ambos flujos siguen respetando "nunca push directo a `main`/`develop`, solo PR + CI verde" (ver reglas de integridad de git flow en `AGENTS.md`); los comandos de `features` documentados asumen que el PR correspondiente ya fue aprobado.
+- Ambos flujos siguen respetando "nunca push directo a `main`/`develop`, solo PR + CI verde" (ver reglas de integridad de git flow en `HARNESS.md`); los comandos de `features` documentados asumen que el PR correspondiente ya fue aprobado.
 
 ## Regla de fases
 

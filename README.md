@@ -2,7 +2,7 @@
 
 Plantilla de ingenieria de arneses que orquesta el ciclo de vida completo de software mediante agentes especializados, con soporte multi-CLI (opencode y Claude Code hoy; Codex CLI planeado). Agnostica a tecnologias: el stack se define durante `inception`.
 
-> Este README cubre que es el harness, como instalarlo y como usarlo. La referencia completa y actualizada del proceso (comandos, schema de estado, reglas de git flow) vive en [`AGENTS.md`](./AGENTS.md), que opencode y Claude Code cargan automaticamente como contexto del proyecto.
+> Este README cubre que es el harness, como instalarlo y como usarlo. La referencia completa y actualizada del proceso (comandos, schema de estado, reglas de git flow), agnostica al CLI que uses, vive en [`HARNESS.md`](./HARNESS.md) — se instala siempre, sin importar que CLI elijas. `AGENTS.md` (solo con opencode) y `CLAUDE.md` (solo con Claude Code) son wrappers delgados que la referencian.
 
 ## Contenido
 
@@ -32,7 +32,7 @@ por HU:      develop → test → quality → deploy
 
 Cada feature comparte `analysis`/`design`; cada historia de usuario (HU) dentro de la feature avanza por su propio `develop → test → quality → deploy` en su rama `hu/*`, lo que permite paralelismo entre HUs y entre features.
 
-Ver el pipeline completo, las tablas de artefactos por fase y los comandos de `features` en [`AGENTS.md`](./AGENTS.md#pipeline-del-sdlc).
+Ver el pipeline completo, las tablas de artefactos por fase y los comandos de `features` en [`HARNESS.md`](./HARNESS.md#pipeline-del-sdlc).
 
 ### Agentes disponibles
 
@@ -71,11 +71,11 @@ La plantilla genera una configuracion equivalente por cada CLI de agentes que el
 
 | CLI | Estado | Que se genera |
 |-----|--------|----------------|
-| **opencode** | Soportado | `.opencode/agents/`, `.opencode/skills/`, `opencode.json` |
+| **opencode** | Soportado | `.opencode/agents/`, `.opencode/skills/`, `opencode.json`, `AGENTS.md` |
 | **Claude Code** | Soportado | `.claude/agents/` (traducido desde `.opencode/agents/`), `.claude/skills/` (copia directa, mismo formato), `CLAUDE.md` (rol de orquestador, generado desde `leader.md`) |
 | **Codex CLI** | Proximamente | Solo se detecta en el banner del instalador; todavia no genera configuracion |
 
-`AGENTS.md` y `.harness-state.json` son comunes a cualquier runtime.
+`HARNESS.md` y `.harness-state.json` son comunes a cualquier runtime y se instalan siempre. `AGENTS.md` es exclusivo de opencode — a proposito **no se instala con Claude Code**, para no dejar un archivo que documenta una estructura (`.opencode/`) que no existe en ese caso y que alguien podria borrar por confusion.
 
 > **Nota sobre la traduccion a Claude Code**: opencode declara permisos granulares por patron de comando bash (ej. `"git *": allow`), algo que el formato de subagentes de Claude Code no puede expresar con la misma precision (alli `tools` es una lista de herramientas, no de comandos). La traduccion es de mejor esfuerzo: los agentes de solo analisis (`quality`) quedan sin `Write`/`Edit`; el resto hereda todas las herramientas. Ver `bin/lib/providers/claude.js` para el detalle.
 
@@ -248,7 +248,7 @@ Persiste el progreso entre sesiones: inception (con sus 6 fases internas), featu
 }
 ```
 
-El schema completo (con timestamps, `docsPath`, `branch`, `prUrl`) esta en `templates/state/harness-state.json`, y la tabla de estados validos en [`AGENTS.md`](./AGENTS.md#estados-validos).
+El schema completo (con timestamps, `docsPath`, `branch`, `prUrl`) esta en `templates/state/harness-state.json`, y la tabla de estados validos en [`HARNESS.md`](./HARNESS.md#estados-validos).
 
 > Nota: el tracking de los pasos TDD (RED/GREEN/REFACTOR) es interno a la fase `develop` y **no** se persiste en `.harness-state.json`.
 
@@ -285,4 +285,4 @@ mi-proyecto/
 - **BDD en `analysis`**, **TDD en `develop`**, usando el skill del stack activo
 - **HITL** (Human in the Loop) es opcional fuera de inception; si esta activo, cada fase requiere aprobacion explicita
 
-Para el detalle completo de comandos, estados y reglas de integridad de git, ver [`AGENTS.md`](./AGENTS.md).
+Para el detalle completo de comandos, estados y reglas de integridad de git, ver [`HARNESS.md`](./HARNESS.md).

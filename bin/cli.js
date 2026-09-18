@@ -148,10 +148,11 @@ async function main() {
   try {
     let totalCopied = 0;
 
-    // Comunes a cualquier CLI seleccionado: AGENTS.md (referencia del pipeline,
-    // leida tanto por opencode.json como por CLAUDE.md) y templates/ (artefactos
-    // que consumen los agentes/subagentes sea cual sea el runtime).
-    fs.cpSync(path.join(PACKAGE_ROOT, 'AGENTS.md'), path.join(dest, 'AGENTS.md'), { force: true });
+    // Comunes a cualquier CLI seleccionado: HARNESS.md (referencia agnostica del
+    // pipeline, leida por opencode.json y referenciada desde CLAUDE.md/AGENTS.md) y
+    // templates/ (artefactos que consumen los agentes/subagentes sea cual sea el
+    // runtime). AGENTS.md NO va aqui: es exclusivo de opencode (ver opencode.js).
+    fs.cpSync(path.join(PACKAGE_ROOT, 'HARNESS.md'), path.join(dest, 'HARNESS.md'), { force: true });
     fs.cpSync(path.join(PACKAGE_ROOT, 'templates'), path.join(dest, 'templates'), { recursive: true, force: true });
     totalCopied += 2;
 
@@ -176,7 +177,7 @@ async function main() {
     for (const provider of selectedProviders) {
       if (provider.usageHint) steps.push(provider.usageHint);
     }
-    steps.push('Lee AGENTS.md para el detalle completo del pipeline');
+    steps.push('Lee HARNESS.md para el detalle completo del pipeline');
 
     console.log(pc.bold('Proximos pasos:'));
     steps.forEach((step, i) => console.log(`  ${i + 1}. ${step}`));

@@ -17,10 +17,14 @@ const PACKAGE_ROOT = path.join(__dirname, '..', '..', '..');
 // desarrollo del propio harness) deben mantenerse en sync a mano si cambian.
 const OPENCODE_GITIGNORE_CONTENT = ['node_modules', 'package.json', 'package-lock.json', '.gitignore', ''].join('\n');
 
-// "templates" y "AGENTS.md" son comunes a cualquier CLI y se copian de forma
-// incondicional desde cli.js, no desde este provider (ver copyCommonFiles en cli.js).
-// Aqui solo va lo exclusivo de opencode.
-const REQUIRED_ENTRIES = ['.opencode/agents', '.opencode/skills', 'opencode.json'];
+// "templates" y "HARNESS.md" son comunes a cualquier CLI y se copian de forma
+// incondicional desde cli.js (ver main() en cli.js), no desde este provider.
+// AGENTS.md SI es exclusivo de opencode: es un wrapper delgado (ver AGENTS.md en la
+// raiz de este repo) que referencia HARNESS.md, mas la seccion "## Estructura" que
+// describe especificamente el layout de .opencode/. No se instala con Claude Code
+// para evitar confundir a ese perfil de usuario con un archivo que no aplica y que
+// podria borrar por error, pensando que es basura de otro CLI.
+const REQUIRED_ENTRIES = ['.opencode/agents', '.opencode/skills', 'AGENTS.md', 'opencode.json'];
 
 function copyEntry(entry, destDir) {
   const src = path.join(PACKAGE_ROOT, entry);

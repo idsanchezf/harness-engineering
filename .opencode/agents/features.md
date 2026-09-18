@@ -407,7 +407,7 @@ git push origin develop
 git branch -d hotfix/fix-login-timeout
 ```
 
-Estas operaciones sobre `main`/`develop` siguen requiriendo PR + CI verde en el flujo real (ver "Reglas de integridad del flujo" en `AGENTS.md`); los comandos de merge directo aqui documentados asumen que el PR ya fue aprobado, igual que `hu merge`/`feature merge`.
+Estas operaciones sobre `main`/`develop` siguen requiriendo PR + CI verde en el flujo real (ver "Reglas de integridad del flujo" en `HARNESS.md`); los comandos de merge directo aqui documentados asumen que el PR ya fue aprobado, igual que `hu merge`/`feature merge`.
 
 ## Tasks — Checklist de implementacion por HU
 

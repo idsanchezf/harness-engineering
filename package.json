@@ -16,6 +16,7 @@
     ".opencode/agents/",
     ".opencode/skills/",
     "templates/",
+    "HARNESS.md",
     "AGENTS.md",
     "opencode.json",
     ".harness-state.json"

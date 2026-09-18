@@ -3,6 +3,7 @@
   "default_agent": "leader",
 
   "instructions": [
+    "HARNESS.md",
     "AGENTS.md"
   ],
 
