@@ -21,6 +21,7 @@ Eres el guardian del archivo `.harness-state.json`. El leader te invoca para ges
   "createdAt": "2026-05-26T00:00:00Z",
   "updatedAt": "2026-05-26T00:00:00Z",
   "humanInTheLoop": true,
+  "harnessEngineeringVersion": "0.4.0",
   "inception": {
     "status": "completed",
     "approved": true,
@@ -62,10 +63,11 @@ Eres el guardian del archivo `.harness-state.json`. El leader te invoca para ges
           "prUrl": null,
           "docsPath": "docs/features/F001-registro-usuarios-oauth2/US-001/",
           "phases": {
-            "develop": { "status": "in_progress", "approved": false, "startedAt": "..." },
-            "test":    { "status": "pending",     "approved": false },
-            "quality": { "status": "pending",     "approved": false },
-            "deploy":  { "status": "pending",     "approved": false }
+            "develop":  { "status": "in_progress", "approved": false, "startedAt": "..." },
+            "test":     { "status": "pending",     "approved": false },
+            "quality":  { "status": "pending",     "approved": false },
+            "deploy":   { "status": "pending",     "approved": false },
+            "tracking": { "status": "pending",     "approved": false }
           }
         },
         {
@@ -75,10 +77,11 @@ Eres el guardian del archivo `.harness-state.json`. El leader te invoca para ges
           "branch": null,
           "docsPath": "docs/features/F001-registro-usuarios-oauth2/US-002/",
           "phases": {
-            "develop": { "status": "pending", "approved": false },
-            "test":    { "status": "pending", "approved": false },
-            "quality": { "status": "pending", "approved": false },
-            "deploy":  { "status": "pending", "approved": false }
+            "develop":  { "status": "pending", "approved": false },
+            "test":     { "status": "pending", "approved": false },
+            "quality":  { "status": "pending", "approved": false },
+            "deploy":   { "status": "pending", "approved": false },
+            "tracking": { "status": "pending", "approved": false }
           }
         }
       ]
@@ -176,7 +179,7 @@ Solo UNA fase de inception puede estar `in_progress` a la vez. Las fases son sec
 3. **Transiciones de fase**
    - **Inception-level**: `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `environments`
    - **Feature-level**: `analysis` y `design`
-   - **HU-level**: `develop`, `test`, `quality`, `deploy`
+   - **HU-level**: `develop`, `test`, `quality`, `deploy`, `tracking` (5 fases; `tracking` es la ultima, corre despues de `deploy` y antes de `hu complete`)
    - Completar inception: `inception.status = "completed"`, todas las fases internas a `completed`, registrar `completedAt`
    - Iniciar inception: `inception.status = "in_progress"`, registrar `startedAt`
    - Iniciar fase de inception: `inception.phases.<fase>.status = "in_progress"`, registrar `startedAt`
@@ -276,6 +279,15 @@ Las tareas se leen/escriben del archivo `docs/features/{featureId}-{slug}/US-{hu
 - `task start {featureId} {huId} {taskId}` — marcar tarea como `in_progress`
 - `task done {featureId} {huId} {taskId}` — marcar tarea como `done`
 - `task block {featureId} {huId} {taskId} motivo="..."` — bloquear tarea
+
+### Comandos de tracking
+
+Los numeros crudos de tiempo/tokens los calcula el subagente `tracking` (nunca vos: no sumes tokens a mano). Vos solo los persistis cuando el leader te pasa el JSON que `tracking` devolvio.
+
+- `tracking record {featureId} {huId}` — persiste el bloque `tracking` (tokens, tokensSource, sessionsMatched, costUsd, collectedAt, warnings) recibido del subagente `tracking` en las 5 fases de esa HU dentro de `.harness-state.json`, y en cada tarea correspondiente de su `tasks.json`. Si es la primera vez que se corre `track` en el proyecto, tambien fija `harnessEngineeringVersion` en la raiz del estado con la version que devolvio el comando
+- `tracking record {featureId}` — variante a nivel feature, para persistir el bloque `tracking` de `analysis`/`design`
+- `tracking report feature {featureId}` — el leader la usa para pedirle a `tracking` que regenere el reporte de esa feature on-demand (no escribe estado, solo dispara la regeneracion del reporte via el subagente `tracking`)
+- `tracking report global` — igual, pero para el reporte global del proyecto
 
 ## Creacion de ramas
 
@@ -484,11 +496,14 @@ docs/
 │   ├── quality-tooling.md
 │   └── environments.md
 ├── architecture.md                    # Arquitectura global (ADR, C4) — creado por inception, mantenido por architect
+├── tracking/
+│   └── global-report.md               # tracking: rollup de tiempo/tokens de todas las features
 ├── features/
 │   └── F001-registro-usuarios-oauth2/
 │       ├── user-stories.md            # analysis (feature): todas las HUs con criterios Gherkin embebidos
 │       ├── api-contract.yaml          # design (feature): contratos API
 │       ├── data-model.md              # design (feature): modelo de datos
+│       ├── tracking-report.md         # tracking: rollup de tiempo/tokens de esta feature
 │       ├── US-001/
 │       │   ├── tasks.json             # design: checklist de develop
 │       │   ├── test-report.md         # test
@@ -513,7 +528,7 @@ docs/
 - Cada feature iniciada debe tener su rama `feature/*` creada desde `develop`
 - Cada HU iniciada debe tener su rama `hu/*` creada desde la rama feature
 - Al crear una feature, registras `phases` con 2 fases: `analysis`, `design`. `userStories` inicia como `[]`
-- Al crear una HU, registras `phases` con 4 fases: `develop`, `test`, `quality`, `deploy`.
+- Al crear una HU, registras `phases` con 5 fases: `develop`, `test`, `quality`, `deploy`, `tracking`.
 - Ninguna feature puede iniciar si `inception.status !== "completed"` o `inception.approved !== true`
 - Ninguna HU puede iniciar `develop` si `design` de la feature no esta completada
 - La primera feature (F001) inicia en `analysis` por defecto

@@ -168,3 +168,30 @@
 - El campo `tier` identifica si es Backend o Frontend.
 - El campo `layer` identifica la capa especifica dentro del tier.
 - Las tareas se ordenan por precedencia y tier: primero Backend (Domain → Application → Infrastructure → Api), luego Frontend (Services → State → Components → Pages → Routing).
+
+## Campo `tracking` (poblado por la fase `tracking`, no por `design`)
+
+`design` genera las tareas sin este campo (como en el ejemplo de arriba: `pending`, sin tiempo ni tokens). Al completar la HU, la fase `tracking` corre `track collect` y `features tracking record` agrega un bloque `tracking` a cada tarea ya completada, con el mismo shape que en `.harness-state.json` (ver `templates/state/harness-state.json`):
+
+```json
+{
+  "id": "T001",
+  "tier": "Backend",
+  "description": "Crear entidad OAuthToken con factory method",
+  "layer": "Domain",
+  "status": "done",
+  "testFile": "tests/OrderService.UnitTests/Domain/Auth/OAuthTokenTests/CreateTests.cs",
+  "startedAt": "2026-05-26T04:00:00Z",
+  "completedAt": "2026-05-26T04:25:00Z",
+  "tracking": {
+    "tokens": { "input": 3100, "output": 2200, "cacheCreationInput": 500, "cacheReadInput": 900, "total": 6700 },
+    "tokensSource": "claude-transcript",
+    "sessionsMatched": [{ "cli": "claude", "agentId": "a1b2c3d4-...", "tokens": 6700 }],
+    "costUsd": null,
+    "collectedAt": "2026-05-26T09:35:00Z",
+    "warnings": []
+  }
+}
+```
+
+Tareas sin datos disponibles (transcript rotado, sin fuente para esa ventana) quedan con `"tracking": { "tokens": null, "tokensSource": "unavailable", ... }` — nunca se estima un numero sin fuente real. Ver `.opencode/agents/tracking.md` y `HARNESS.md` para el mecanismo completo de captura.

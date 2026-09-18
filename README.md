@@ -25,12 +25,12 @@ inception (una sola vez, co-creativa)
 por feature: analysis → design
    │
    ▼
-por HU:      develop → test → quality → deploy
+por HU:      develop → test → quality → deploy → tracking
 ```
 
 `inception` es prerrequisito de toda feature: produce vision, backlog, modelo de dominio (DDD), arquitectura (`docs/architecture.md`), el scaffold del proyecto y un **walking skeleton** funcional. Es co-creativa (se construye en conversacion con el usuario) y requiere aprobacion HITL siempre, sin importar el flag `humanInTheLoop`.
 
-Cada feature comparte `analysis`/`design`; cada historia de usuario (HU) dentro de la feature avanza por su propio `develop → test → quality → deploy` en su rama `hu/*`, lo que permite paralelismo entre HUs y entre features.
+Cada feature comparte `analysis`/`design`; cada historia de usuario (HU) dentro de la feature avanza por su propio `develop → test → quality → deploy → tracking` en su rama `hu/*`, lo que permite paralelismo entre HUs y entre features. `tracking` calcula tiempo/tokens reales de la HU (nunca estimados) y actualiza los reportes de trazabilidad — ver [Tracking de tiempo y tokens](./HARNESS.md#tracking-de-tiempo-y-tokens).
 
 Ver el pipeline completo, las tablas de artefactos por fase y los comandos de `features` en [`HARNESS.md`](./HARNESS.md#pipeline-del-sdlc).
 
@@ -228,7 +228,7 @@ Si ya sabes que capacidad especifica necesitas:
 
 ### Archivo de estado `.harness-state.json`
 
-Persiste el progreso entre sesiones: inception (con sus 6 fases internas), features (con `analysis`/`design`) y sus HUs (con `develop`/`test`/`quality`/`deploy`). Solo el agente `features` puede escribirlo.
+Persiste el progreso entre sesiones: inception (con sus 6 fases internas), features (con `analysis`/`design`) y sus HUs (con `develop`/`test`/`quality`/`deploy`/`tracking`). Solo el agente `features` puede escribirlo.
 
 ```json
 {

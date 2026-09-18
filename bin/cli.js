@@ -187,7 +187,14 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(pc.red(`Error inesperado: ${err.message}`));
-  process.exitCode = 1;
-});
+if (process.argv[2] === 'track') {
+  // Subcomando de tracking (tiempo/tokens por fase), invocado por los agentes via
+  // bash (ver .opencode/agents/tracking.md). No pasa por el flujo de scaffold ni
+  // muestra el banner.
+  require('./lib/track').run(process.argv.slice(3));
+} else {
+  main().catch((err) => {
+    console.error(pc.red(`Error inesperado: ${err.message}`));
+    process.exitCode = 1;
+  });
+}

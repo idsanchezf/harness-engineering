@@ -26,12 +26,12 @@ analysis → design
 | `analysis` | `analysis` | Historias de usuario detalladas + criterios de aceptacion Gherkin (BDD) para la feature | Feature |
 | `design` | `design` | Contratos API, modelo de datos, y genera `tasks.json` por cada HU | Feature |
 
-### Pipeline por HU (4 fases HU-level)
+### Pipeline por HU (5 fases HU-level)
 
 Cada historia de usuario (HU) dentro de la feature tiene su propio pipeline:
 
 ```
-develop → test → quality → deploy
+develop → test → quality → deploy → tracking
 ```
 
 | Fase | Agente | Proposito | Nivel |
@@ -40,6 +40,9 @@ develop → test → quality → deploy
 | `test` | `test` | Unitarias, integracion, contract testing | HU |
 | `quality` | `quality` | Analisis estatico, seguridad, deuda tecnica | HU |
 | `deploy` | `deploy` | CI/CD, infraestructura, observabilidad | HU |
+| `tracking` | `tracking` | Calcula tiempo/tokens reales de la HU y actualiza el reporte de tracking de la feature | HU |
+
+`tracking` es la ultima fase, corre despues de `deploy` y antes de que la HU cree su PR hacia la feature. Ver [Tracking de tiempo y tokens](#tracking-de-tiempo-y-tokens) para el mecanismo completo.
 
 ## Agentes disponibles
 
@@ -54,6 +57,7 @@ develop → test → quality → deploy
 | `test` | Pruebas unitarias, integracion, carga | Ejecutor (HU-level) |
 | `quality` | Analisis estatico, seguridad, deuda tecnica | Ejecutor (HU-level) |
 | `deploy` | CI/CD, infraestructura, observabilidad | Ejecutor (HU-level) |
+| `tracking` | Tiempo/tokens reales de la HU + reporte de tracking de la feature | Ejecutor (HU-level, ultima fase) |
 | `architect` | Mantener architecture.md vivo (ADRs, C4, stack) | Transversal (bajo demanda) |
 | `scaffold` | Scaffolding de nuevos servicios/proyectos | Transversal (bajo demanda) |
 
@@ -168,6 +172,17 @@ No forman parte del pipeline de fases (no se trackean en `.harness-state.json` c
 @features task start F001 US-001 T004      # Iniciar siguiente tarea
 @features task block F001 US-001 T005 motivo="..." # Bloquear tarea
 ```
+
+### Tracking (tiempo y tokens)
+
+```
+@features tracking record F001 US-001      # Persiste el JSON de tracking recibido del subagente `tracking`
+@features tracking record F001             # Variante a nivel feature (analysis/design)
+@features tracking report feature F001     # Regenera el reporte de tracking de una feature bajo demanda
+@features tracking report global           # Regenera el reporte global del proyecto bajo demanda
+```
+
+Ver [Tracking de tiempo y tokens](#tracking-de-tiempo-y-tokens) para el mecanismo completo.
 
 ## Archivo de estado `.harness-state.json`
 
@@ -383,6 +398,7 @@ mi-proyecto/
 - **Persistencia automatica**: cada cambio de fase, feature, HU, tarea o TDD se guarda en `.harness-state.json`
 - **Resiliencia entre sesiones**: al reabrir tu CLI de agentes se retoma el estado anterior, incluyendo la HU, tarea y paso TDD exacto
 - **Human in the Loop (HITL)**: opcional (excepto en inception, donde es obligatorio). Si esta activo, cada fase requiere aprobacion explicita
+- **Tracking de tiempo/tokens**: `tracking` es la ultima fase HU-level; nunca se estima un valor de tokens sin una fuente real (ver [Tracking de tiempo y tokens](#tracking-de-tiempo-y-tokens))
 
 ## Flujo de integracion (Git Flow)
 
@@ -411,6 +427,48 @@ hu/* ──PR──▶ feature/* ──PR──▶ develop ──release/*──
 4. Las ramas `feature/*` se crean desde `develop` y se mergean via PR a `develop`.
 5. El agente `features` verifica divergencia antes de crear cualquier rama.
 6. El agente lider verifica divergencia al iniciar sesion y advierte si `develop` no esta sincronizado.
+
+## Tracking de tiempo y tokens
+
+El pipeline trackea cuanto tiempo y cuantos tokens consume cada fase, con reportes por feature (desglose por HU y por tarea) y global (resumen por feature), pensados para identificar en que fase del pipeline se gasta mas.
+
+### Como se capturan los datos
+
+Los agentes (instrucciones en markdown para opencode/Claude Code) no tienen forma de saber por si mismos cuantos tokens consumieron — no hay una API expuesta a un subagente para eso. El calculo lo hace un subcomando del paquete npm de este harness (`npx @idsanchezf/harness-engineering track collect`), usando fuentes reales de datos por fuera del agente:
+
+- **Claude Code**: cada invocacion de subagente (Task tool) escribe su propio transcript aislado en `~/.claude/projects/<proyecto>/<sesion>/subagents/agent-{id}.jsonl` (Windows: `%USERPROFILE%\.claude\projects\...`), con `usage` real (input/output/cache tokens) y `timestamp` por mensaje.
+- **opencode**: `opencode stats --days N --project <path>` (uso/costo agregado). Menos preciso que Claude Code porque agrega por rango de dias, no por fase especifica.
+
+**El leader nunca inventa ni estima un numero de tokens.** Si `track collect` no encuentra una fuente real para una fase o tarea, esa entrada queda `"tokensSource": "unavailable"` / `"tokens": null`, y los reportes la muestran como "N/D" explicitamente — nunca un valor adivinado.
+
+### Convencion obligatoria: `description` del Task
+
+Como el `leader` siempre delega el trabajo de cada fase a un subagente puro vía Task, y cada invocacion de Task en Claude Code genera su propio archivo aislado, `track collect` puede mapear cada fase del pipeline a su archivo exacto **si** el leader sigue esta convencion al delegar (ver "Protocolo de delegacion" en `leader.md`):
+
+- Feature-level: `"{fase} {featureId}"` (ej. `"analysis F001"`)
+- HU-level: `"{fase} {featureId} {huId}"` (ej. `"develop F001 US-001"`)
+- Inception: `"{fase}"` (ej. `"discovery"`)
+
+Sin esta convencion, el tracking cae a un fallback por ventana de tiempo (`startedAt`/`completedAt` de la fase vs. el rango del transcript) — funciona, pero es menos preciso y puede generar advertencias si varias fases se solapan en el tiempo.
+
+### Donde viven los reportes
+
+- `docs/features/{id}-{slug}/tracking-report.md` — reporte por feature: resumen, desglose por HU, por HU y fase, por HU y tarea, consumo por tipo de fase (develop/test/quality/deploy/tracking), metricas derivadas, cobertura de datos
+- `docs/tracking/global-report.md` — reporte global: resumen por feature, consumo por tipo de fase a nivel proyecto, top HUs/tareas mas costosas, tendencia por fecha de feature completada
+
+Se actualizan automaticamente cuando una HU completa su fase `tracking` (reporte de feature) y cuando una feature se mergea (`feature merge`, ambos reportes), ademas de bajo demanda via `@features tracking report feature {id}` / `@features tracking report global`.
+
+### Riesgos y limitaciones (comunicados en los propios reportes, seccion "Cobertura y limitaciones")
+
+1. El formato interno de los transcripts de Claude Code puede cambiar entre versiones — el parser es defensivo y degrada a "N/D" en vez de fallar.
+2. El schema exacto de `opencode export` no esta confirmado — v1 solo usa `opencode stats` (documentado), mas agregado y menos preciso por fase.
+3. Sin la convencion de `description`, el fallback por ventana de tiempo puede confundir fases que corren en paralelo (menos relevante para HU-level, ya que el pipeline evita paralelizar fases de la misma HU).
+4. Transcripts rotados/borrados (limpieza de disco, proyecto muy viejo) → "N/D", nunca estimado.
+5. Costo en USD: disponible para opencode (via `stats`), "N/D" para Claude Code (no se hardcodea una tabla de precios por modelo, quedaria desactualizada).
+6. Un `hitl reject` conserva el `startedAt` original de la fase — su tracking incluye el trabajo del intento rechazado (costo total hasta la version aprobada, no un bug).
+7. Si `npx` falla (sin red, sin credenciales de GitHub Packages), la fase `tracking` se completa igual, solo con datos "N/D" — nunca bloquea el pipeline.
+8. El parser solo lee `usage`/`timestamp`/`description` de los transcripts — nunca copia contenido de mensajes (codigo, texto del usuario) a los reportes.
+9. `inception` no esta incluida en el tracking en esta version (queda para una version futura).
 
 ## Instrucciones generales
 
