@@ -3,8 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { collectClaudeTokens } = require('./sources/claude-transcript');
-const { collectOpencodeTokens } = require('./sources/opencode-source');
+const { PROVIDERS } = require('../providers');
 const { isOnPath } = require('../detect-agents');
 
 const HU_PHASES = ['develop', 'test', 'quality', 'deploy', 'tracking'];
@@ -26,18 +25,30 @@ function loadTasks(projectDir, docsPath) {
   }
 }
 
-// Intenta Claude Code primero (mecanismo mas preciso, confirmado empiricamente), y
-// cae a opencode si Claude no esta disponible o no devolvio datos. Nunca inventa un
-// numero si ninguna fuente real esta disponible.
-function collectForWindow(projectDir, expectedTokens, window) {
-  if (isOnPath('claude')) {
-    const result = collectClaudeTokens(projectDir, expectedTokens, window);
+// Itera el registro de providers (bin/lib/providers/index.js) en vez de tener un
+// CLI hardcodeado por nombre: cada provider declara su propio `trackingSource`
+// (`{ priority, collect(projectDir, expectedTokens, window) }`, o `null`/ausente si
+// no tiene fuente de tracking, ej. Codex). Prioridad mas baja = se intenta primero
+// (Claude Code va primero por ser el mecanismo mas preciso, confirmado
+// empiricamente; opencode es el fallback). Nunca inventa un numero si ninguna
+// fuente real esta disponible.
+//
+// `deps` es solo para tests (inyectar un registro de providers/deteccion de PATH
+// falsos sin depender de que binarios reales esten instalados); el uso normal nunca
+// lo pasa y usa el registro real.
+function collectForWindow(projectDir, expectedTokens, window, deps = {}) {
+  const providers = deps.providers || PROVIDERS;
+  const isProviderAvailable = deps.isOnPath || isOnPath;
+
+  const sources = providers
+    .filter((p) => p.trackingSource && isProviderAvailable(p.detectBinary))
+    .sort((a, b) => a.trackingSource.priority - b.trackingSource.priority);
+
+  for (const provider of sources) {
+    const result = provider.trackingSource.collect(projectDir, expectedTokens, window);
     if (result.tokens) return result;
   }
-  if (isOnPath('opencode')) {
-    const result = collectOpencodeTokens(projectDir, {});
-    if (result.tokens) return result;
-  }
+
   return {
     tokens: null,
     source: 'unavailable',
@@ -193,6 +204,7 @@ module.exports = {
   collect,
   collectHu,
   collectFeature,
+  collectForWindow,
   loadState,
   loadTasks,
   buildPhaseTypeBreakdown,

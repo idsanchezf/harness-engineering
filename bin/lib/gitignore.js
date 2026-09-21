@@ -6,17 +6,21 @@ const { ensureBlock } = require('./block-file');
 const START_MARKER = '# --- harness-engineering:start ---';
 const END_MARKER = '# --- harness-engineering:end ---';
 
-const BLOCK = [
-  START_MARKER,
-  '# Generado por @idsanchezf/harness-engineering.',
-  '# .opencode/node_modules queda cubierto por .opencode/.gitignore (copiado junto con la plantilla).',
-  'node_modules/',
-  END_MARKER,
-  '',
-].join('\n');
+// selectedProviders: cada uno puede declarar `gitignoreNotes` (lineas de comentario
+// adicionales, ej. la nota de opencode sobre .opencode/.gitignore) — antes esa nota
+// se incluia siempre, incluso si opencode no habia sido seleccionado.
+function ensureGitignore(destDir, selectedProviders = []) {
+  const extraNotes = selectedProviders.flatMap((p) => p.gitignoreNotes || []);
+  const block = [
+    START_MARKER,
+    '# Generado por @idsanchezf/harness-engineering.',
+    ...extraNotes,
+    'node_modules/',
+    END_MARKER,
+    '',
+  ].join('\n');
 
-function ensureGitignore(destDir) {
-  return ensureBlock(path.join(destDir, '.gitignore'), { startMarker: START_MARKER, block: BLOCK });
+  return ensureBlock(path.join(destDir, '.gitignore'), { startMarker: START_MARKER, block });
 }
 
 module.exports = { ensureGitignore };

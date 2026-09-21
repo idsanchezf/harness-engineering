@@ -1,7 +1,7 @@
 {
   "name": "@idsanchezf/harness-engineering",
   "version": "0.5.1",
-  "description": "Plantilla de orquestacion de agentes de IA (opencode) para el ciclo de vida completo de software.",
+  "description": "Plantilla agnostica de orquestacion de agentes de IA (opencode, Claude Code, Codex) para el ciclo de vida completo de software.",
   "license": "MIT",
   "author": "idsanchezf",
   "bin": {
@@ -13,14 +13,16 @@
   },
   "files": [
     "bin/",
-    ".opencode/agents/",
-    ".opencode/skills/",
+    "agents/",
+    "skills/",
     "templates/",
     "HARNESS.md",
-    "AGENTS.md",
-    "opencode.json",
     ".harness-state.json"
   ],
+  "scripts": {
+    "sync": "node scripts/sync-opencode.js",
+    "test": "node --test"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
@@ -30,6 +32,8 @@
   },
   "keywords": [
     "opencode",
+    "claude-code",
+    "codex",
     "ai-agents",
     "scaffold",
     "sdlc",

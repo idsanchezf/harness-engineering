@@ -11,18 +11,19 @@ const { detectAll } = require('./lib/detect-agents');
 const { PROVIDERS } = require('./lib/providers');
 const { ensureGitignore } = require('./lib/gitignore');
 const { parseAgentFlag, promptForProviders } = require('./lib/select-providers');
-
-const PACKAGE_ROOT = path.join(__dirname, '..');
+const { writeAgentsMd } = require('./lib/agents-md');
+const { PACKAGE_ROOT, AGENTS_DIR } = require('./lib/source-paths');
 
 const HELP = `
-${pc.bold('harness-engineering')} - scaffolding de la plantilla de agentes IA (opencode + Claude Code)
+${pc.bold('harness-engineering')} - scaffolding de la plantilla de agentes IA (opencode + Claude Code + Codex)
 
 Uso:
   npx @idsanchezf/harness-engineering [directorio] [opciones]
 
 Opciones:
-  --agent <id>    CLI(s) a instalar: opencode, claude, o "opencode,claude" (o "all"). Sin esta
-                  opcion, en terminal interactiva se pregunta; si no, se instalan todos.
+  --agent <id>    CLI(s) a instalar: opencode, claude, codex, o combinaciones separadas por
+                  coma (ej. "opencode,claude") (o "all"). Sin esta opcion, en terminal
+                  interactiva se pregunta; si no, se instalan todos.
   -y, --yes       Continua aunque el directorio destino no este vacio
   -f, --force     Ademas de --yes, permite sobrescribir un .harness-state.json con progreso real
   -v, --version   Muestra la version
@@ -151,7 +152,7 @@ async function main() {
     // Comunes a cualquier CLI seleccionado: HARNESS.md (referencia agnostica del
     // pipeline, leida por opencode.json y referenciada desde CLAUDE.md/AGENTS.md) y
     // templates/ (artefactos que consumen los agentes/subagentes sea cual sea el
-    // runtime). AGENTS.md NO va aqui: es exclusivo de opencode (ver opencode.js).
+    // runtime).
     fs.cpSync(path.join(PACKAGE_ROOT, 'HARNESS.md'), path.join(dest, 'HARNESS.md'), { force: true });
     fs.cpSync(path.join(PACKAGE_ROOT, 'templates'), path.join(dest, 'templates'), { recursive: true, force: true });
     totalCopied += 2;
@@ -160,9 +161,16 @@ async function main() {
       const { copied } = provider.scaffold(dest);
       totalCopied += copied.length;
     }
+
+    // AGENTS.md depende del CONJUNTO de providers seleccionados (tabla de estructura
+    // + bloque del leader solo si algun provider lo necesita), asi que se arma aparte
+    // en vez de que cada provider lo escriba por su cuenta (ver lib/agents-md.js).
+    const agentsMdResult = writeAgentsMd(dest, selectedProviders, { agentsDir: AGENTS_DIR });
+    totalCopied += agentsMdResult.copied.length;
+
     fs.copyFileSync(path.join(PACKAGE_ROOT, '.harness-state.json'), statePath);
     totalCopied += 1;
-    const gitignoreResult = ensureGitignore(dest);
+    const gitignoreResult = ensureGitignore(dest, selectedProviders);
 
     console.log(pc.green(`Plantilla copiada a ${dest}`));
     console.log(pc.dim(`  ${totalCopied} entradas escritas · .gitignore ${gitignoreResult}`));

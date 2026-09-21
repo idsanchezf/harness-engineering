@@ -5,31 +5,22 @@ const path = require('node:path');
 
 const { parseAgentFile } = require('../agent-frontmatter');
 const { ensureBlock } = require('../block-file');
+const { adaptBody } = require('./adapt-body');
+const { AGENTS_DIR, SKILLS_DIR } = require('../source-paths');
+const { collectClaudeTokens } = require('../track/sources/claude-transcript');
 
-const PACKAGE_ROOT = path.join(__dirname, '..', '..', '..');
-const AGENTS_DIR = path.join(PACKAGE_ROOT, '.opencode', 'agents');
-const SKILLS_DIR = path.join(PACKAGE_ROOT, '.opencode', 'skills');
+const CLAUDE_AGENTS_DIR = '.claude/agents';
+const CLAUDE_SKILLS_DIR = '.claude/skills';
 
 const CLAUDE_MD_START_MARKER = '<!-- harness-engineering:leader:start -->';
 const CLAUDE_MD_END_MARKER = '<!-- harness-engineering:leader:end -->';
 
-// Traduce referencias literales de ruta/nombre especificas de opencode al equivalente
-// de Claude Code. El contenido de los agentes es en su mayoria prosa agnostica de
-// runtime (describe el PROCESO, no sintaxis de opencode), asi que esto cubre los
-// pocos puntos reales de acoplamiento encontrados en .opencode/agents/*.md.
-//
-// Tambien quita la seccion final "## Permisos y herramientas": en los 10 agentes de
-// opencode es siempre la ultima seccion del archivo (verificado), y describe la tabla
-// de permisos especifica de opencode (edit/bash granular) que aqui ya se tradujo de
-// forma equivalente al frontmatter `tools:` de Claude Code (o, para el lider, no aplica
-// en CLAUDE.md ya que la sesion principal no tiene ese mecanismo de restriccion).
 function adaptBodyForClaude(body) {
-  const withoutPermissionsSection = body.replace(/\n## Permisos y herramientas[\s\S]*$/, '\n');
-  return withoutPermissionsSection
-    .replaceAll('.opencode/skills/', '.claude/skills/')
-    .replaceAll('.opencode/agents/', '.claude/agents/')
-    .replace('cargan **automaticamente** por opencode cuando el contexto coincide', 'cargan **automaticamente** cuando el contexto coincide')
-    .trimEnd();
+  return adaptBody(body, {
+    agentsDir: CLAUDE_AGENTS_DIR,
+    skillsDir: CLAUDE_SKILLS_DIR,
+    autoloadPhrase: 'cargan **automaticamente** cuando el contexto coincide',
+  });
 }
 
 // Mapeo de mejor esfuerzo, no 1:1: opencode declara permisos granulares por patron de
@@ -119,11 +110,26 @@ function scaffold(destDir) {
   return { copied };
 }
 
+function describeStructure() {
+  return [
+    { path: '.claude/agents/*.md', note: 'Subagentes (el leader vive en CLAUDE.md, no como archivo)' },
+    { path: '.claude/skills/*/SKILL.md', note: 'Skills tecnologicas (autocarga nativa de Claude Code)' },
+    { path: 'CLAUDE.md', note: 'Incluye el rol de orquestador del leader' },
+  ];
+}
+
 module.exports = {
   id: 'claude',
   label: 'claude',
   detectBinary: 'claude',
   status: 'supported',
   usageHint: 'Abre el directorio con Claude Code: el rol de orquestador ya esta cargado en CLAUDE.md',
+  describeStructure,
+  // Mecanismo mas preciso (confirmado empiricamente); prioridad mas alta que
+  // opencode en bin/lib/track/collect.js.
+  trackingSource: {
+    priority: 0,
+    collect: (projectDir, expectedTokens, window) => collectClaudeTokens(projectDir, expectedTokens, window),
+  },
   scaffold,
 };
