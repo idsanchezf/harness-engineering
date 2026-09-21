@@ -62,7 +62,7 @@ function buildClaudeMdBlock(leaderParsed) {
     '',
     '# Harness Engineering — rol de orquestador',
     '',
-    'Las instrucciones siguientes definen tu rol por defecto en este proyecto: sos el orquestador unico del pipeline de ingenieria (inception -> analysis/design por feature -> develop/test/quality/deploy por HU), delegando en subagentes puros via la herramienta Task. Provienen de `.opencode/agents/leader.md` (fuente de verdad del proceso, compartida con opencode) y fueron adaptadas para Claude Code. El detalle completo de comandos, estados y reglas de git vive en `HARNESS.md` — leelo antes de operar.',
+    'Las instrucciones siguientes definen tu rol por defecto en este proyecto: sos el orquestador unico del pipeline de ingenieria (inception -> analysis/design por feature -> develop/test/quality/deploy por HU), delegando en subagentes puros via la herramienta Task. Equivalen al agente `leader` (mode: primary) de opencode, adaptadas aqui porque Claude Code no tiene el concepto de agente por defecto de proyecto. El detalle completo de comandos, estados y reglas de git vive en `HARNESS.md` — leelo antes de operar.',
     '',
     adaptBodyForClaude(leaderParsed.body),
     '',
