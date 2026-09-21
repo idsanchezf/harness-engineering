@@ -20,7 +20,6 @@
     ".harness-state.json"
   ],
   "scripts": {
-    "sync": "node scripts/sync-opencode.js",
     "test": "node --test"
   },
   "publishConfig": {

@@ -179,17 +179,22 @@ npx @idsanchezf/harness-engineering mi-proyecto --agent opencode,claude
 npx @idsanchezf/harness-engineering mi-proyecto --agent codex
 ```
 
-### Opcion B: copia manual (sin npm)
+### Opcion B: clonando el repo (sin npm/npx)
 
-`.opencode/`, `opencode.json` y `AGENTS.md` en la raiz de este repo son salida generada localmente (gitignorados, no forman parte del checkout) — regeneralos primero con `npm run sync` antes de copiar:
+Cloná este repo y corré el CLI directamente con `node`, sin publicar ni instalar nada:
 
 ```powershell
-npm run sync
-cp -Recurse C:\@idsanchezf\harness-engineering\* .\mi-proyecto\
-cd .\mi-proyecto
+git clone https://github.com/idsanchezf/harness-engineering.git
+cd harness-engineering
+node bin/cli.js C:\ruta\a\mi-proyecto --agent claude
 ```
 
-Con esta opcion solo se obtiene la configuracion de opencode (los archivos generados por `npm run sync`); la traduccion a `.claude/` y `.codex/` es exclusiva del instalador `npx` (o de correr `node bin/cli.js` con el `--agent` correspondiente).
+Es el mismo `bin/cli.js` que corre `npx` — acepta los mismos flags (`--agent`, `--yes`,
+`--force`) y genera exactamente el mismo resultado para cualquier combinacion de CLIs.
+
+> ¿Queres contribuir a este repo (no solo usarlo)? Empezá por [`AGENTS.md`](./AGENTS.md)
+> (o [`CLAUDE.md`](./CLAUDE.md) si usas Claude Code) para orientarte en la estructura del
+> proyecto.
 
 ---
 

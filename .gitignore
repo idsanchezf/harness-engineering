@@ -7,10 +7,3 @@ node_modules/
 
 # graphify-axet
 .graphify/
-
-# Dogfooding local: opencode.json, AGENTS.md y .opencode/ en la raiz del propio repo
-# son ahora salida generada (no fuente) a partir de agents/ y skills/. Se regeneran
-# con "npm run sync" y no se commitean.
-/.opencode/
-/opencode.json
-/AGENTS.md
