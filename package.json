@@ -1,6 +1,6 @@
 {
   "name": "@idsanchezf/harness-engineering",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Plantilla agnostica de orquestacion de agentes de IA (opencode, Claude Code, Codex) para el ciclo de vida completo de software.",
   "license": "MIT",
   "author": "idsanchezf",
