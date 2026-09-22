@@ -113,46 +113,59 @@ La columna `Skill` en la tabla de stack de `docs/architecture.md` permite el map
 
 ## Comandos de gestion
 
-El agente `features` gestiona el backlog y el archivo `.harness-state.json`:
+Dos vias distintas, segun si la operacion implica git/GitHub o no:
 
-### Features
+- **Transiciones de estado puramente mecanicas** (fases, HITL, tasks, tracking): el
+  `leader` las ejecuta el mismo por Bash contra la CLI `state` del paquete npm —
+  `npx @idsanchezf/harness-engineering state ...` — sin spawnear ningun subagente.
+  Es el UNICO code path autorizado a escribir `.harness-state.json`.
+- **Operaciones de git/GitHub** (crear ramas, PRs, merges): las delega al subagente
+  `features` via `Task`, que ejecuta los comandos git/`gh` y al final persiste el
+  resultado invocando esa misma CLI `state` (nunca edita el JSON a mano).
 
-```
-@features status                          # Ver estado actual del proyecto
-@features list features                   # Listar todas las features con sus HUs
-@features feature start F001              # Inicia feature + crea rama feature/F001-{slug}
-@features feature complete F001           # Push + crea PR hacia develop (marca in_review)
-@features feature merge F001              # Tras aprobacion del PR, mergea y marca done
-@features feature block F002 motivo="..." # Bloquear feature
-@features phase complete F001 analysis    # Marcar fase feature como completada
-@features phase start F001 design         # Iniciar siguiente fase feature
-```
-
-### Inception
+### Estado (CLI `state`, invocada directamente por el leader)
 
 ```
-@features inception start                 # Iniciar fase inception del proyecto
-@features inception complete              # Completar fase inception
-@features inception status                # Ver estado de inception
-@features inception phase start {fase}    # Iniciar una fase especifica de inception
-@features inception phase complete {fase} # Completar una fase especifica de inception
+npx @idsanchezf/harness-engineering state resume                          # Estado actual del proyecto
+npx @idsanchezf/harness-engineering state list-features                  # Listar todas las features con sus HUs
+npx @idsanchezf/harness-engineering state feature phase-start F001 analysis     # Iniciar fase feature
+npx @idsanchezf/harness-engineering state feature phase-complete F001 analysis  # Completar fase feature
+npx @idsanchezf/harness-engineering state feature block F002 --motivo "..."     # Bloquear feature
+```
+
+### Inception (CLI `state`)
+
+```
+npx @idsanchezf/harness-engineering state inception start
+npx @idsanchezf/harness-engineering state inception complete
+npx @idsanchezf/harness-engineering state inception status
+npx @idsanchezf/harness-engineering state inception phase-start {fase}
+npx @idsanchezf/harness-engineering state inception phase-complete {fase}
 ```
 
 Fases de inception: `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `environments`
 
-### Historias de Usuario (HU)
+### Historias de Usuario — estado (CLI `state`) vs. git/PR (`@features`)
 
 ```
-@features hu create F001 US-001 "Registro Google"  # Registrar HU tras analysis
-@features hu start F001 US-001                      # Crear rama hu/F001-US-001-{slug} + iniciar develop
-@features hu complete F001 US-001                   # Push + crea PR de HU hacia la feature (marca in_review)
-@features hu merge F001 US-001                      # Tras aprobacion del PR, mergea HU a la feature (marca done)
-@features hu list F001                              # Listar HUs de la feature con estado
-@features hu phase complete F001 US-001 develop     # Marcar fase HU como completada
-@features hu phase start F001 US-001 test           # Iniciar siguiente fase HU
+npx @idsanchezf/harness-engineering state hu create F001 US-001 "Registro Google"   # Registrar HU tras analysis
+npx @idsanchezf/harness-engineering state hu phase-start F001 US-001 test           # Iniciar siguiente fase HU
+npx @idsanchezf/harness-engineering state hu phase-complete F001 US-001 develop     # Completar fase HU
+
+@features hu start F001 US-001      # (Task) Crear rama hu/F001-US-001-{slug} + registrar branch
+@features hu complete F001 US-001   # (Task) Push + crea PR de HU hacia la feature (marca in_review)
+@features hu merge F001 US-001      # (Task) Tras aprobacion del PR, mergea HU a la feature (marca done)
 ```
 
-### Release y Hotfix
+### Features — estado (CLI `state`) vs. git/PR (`@features`)
+
+```
+@features feature start F001        # (Task) Crea rama feature/F001-{slug} + registra la feature
+@features feature complete F001     # (Task) Push + crea PR hacia develop (marca in_review)
+@features feature merge F001        # (Task) Tras aprobacion del PR, mergea y marca done
+```
+
+### Release y Hotfix (siempre `@features`, implican git puro)
 
 ```
 @features release start 1.2.0             # Crea rama release/1.2.0 desde develop
@@ -163,26 +176,28 @@ Fases de inception: `context`, `discovery`, `ddd`, `architecture`, `scaffold`, `
 
 No forman parte del pipeline de fases (no se trackean en `.harness-state.json` como `phases`); se invocan bajo demanda para cortar una version o atender un incidente en produccion. Siguen las mismas reglas de integridad de git flow: solo PR + CI verde hacia `main`/`develop`.
 
-### Tareas (por HU)
+### Tareas por HU (CLI `state`)
 
 ```
-@features tasks list F001 US-001           # Mostrar tareas de una HU
-@features tasks progress F001 US-001       # Barra de progreso por capa
-@features task done F001 US-001 T003       # Marcar tarea como completada
-@features task start F001 US-001 T004      # Iniciar siguiente tarea
-@features task block F001 US-001 T005 motivo="..." # Bloquear tarea
+npx @idsanchezf/harness-engineering state tasks list F001 US-001           # Mostrar tareas de una HU
+npx @idsanchezf/harness-engineering state tasks progress F001 US-001       # Barra de progreso por capa
+npx @idsanchezf/harness-engineering state task done F001 US-001 T003       # Marcar tarea como completada
+npx @idsanchezf/harness-engineering state task start F001 US-001 T004      # Iniciar siguiente tarea
+npx @idsanchezf/harness-engineering state task block F001 US-001 T005 --motivo "..." # Bloquear tarea
 ```
 
 ### Tracking (tiempo y tokens)
 
+El calculo lo hace `track collect` (subagente `tracking`); persistir el resultado es
+mecanico y va por la CLI `state`, invocada directamente por el leader:
+
 ```
-@features tracking record F001 US-001      # Persiste el JSON de tracking recibido del subagente `tracking`
-@features tracking record F001             # Variante a nivel feature (analysis/design)
-@features tracking report feature F001     # Regenera el reporte de tracking de una feature bajo demanda
-@features tracking report global           # Regenera el reporte global del proyecto bajo demanda
+npx @idsanchezf/harness-engineering state tracking record F001 --hu US-001 --data-file {json-de-track-collect}  # Persiste el bloque tracking
+npx @idsanchezf/harness-engineering state tracking record F001 --data-file {json}   # Variante a nivel feature (analysis/design)
 ```
 
-Ver [Tracking de tiempo y tokens](#tracking-de-tiempo-y-tokens) para el mecanismo completo.
+Regenerar los reportes markdown/dashboard sigue siendo trabajo del subagente `tracking`
+(no de la CLI `state`) bajo demanda — ver [Tracking de tiempo y tokens](#tracking-de-tiempo-y-tokens).
 
 ## Archivo de estado `.harness-state.json`
 

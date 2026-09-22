@@ -200,6 +200,12 @@ if (process.argv[2] === 'track') {
   // bash (ver .opencode/agents/tracking.md). No pasa por el flujo de scaffold ni
   // muestra el banner.
   require('./lib/track').run(process.argv.slice(3));
+} else if (process.argv[2] === 'state') {
+  // Subcomando de estado (.harness-state.json / tasks.json), invocado directamente por
+  // el leader via bash para transiciones mecanicas (fases, HITL, tasks, tracking) sin
+  // spawnear el subagente `features` (ver agents/leader.md y agents/features.md). No
+  // pasa por el flujo de scaffold ni muestra el banner.
+  require('./lib/state').run(process.argv.slice(3));
 } else {
   main().catch((err) => {
     console.error(pc.red(`Error inesperado: ${err.message}`));

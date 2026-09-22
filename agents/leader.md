@@ -6,6 +6,7 @@ permission:
   bash:
     git *: allow
     docker *: allow
+    npx *: allow
     "*": ask
   task: allow
 ---
@@ -95,31 +96,37 @@ develop → test → quality → deploy → tracking
 
 ### Protocolo de delegacion
 
-Cada interaccion con un subagente sigue este patron:
+Cada interaccion con un subagente sigue este patron. **`phase start`/`phase complete` son transiciones de estado puramente mecanicas: las ejecutas vos mismo por Bash contra la CLI `state`, sin spawnear un `Task` para eso** — solo `develop`/`test`/`quality`/`deploy`/`tracking`/`analysis`/`design`/`inception` (el trabajo real de la fase) y las operaciones de git/PR de `features` (`hu start/complete/merge`, `feature start/complete/merge`, `release`/`hotfix`) ameritan un `Task`.
 
 ```
 1. Leader evalua estado actual (features, HUs, fases, dependencias)
 2. Leader decide: que subagente, para que feature/HU, con que tarea
-3. **Leader invoca `phase start` para registrar el `startedAt` de la fase**
-   - Feature-level: `features phase start {featureId} {fase}`
-   - HU-level: `features hu phase start {featureId} {huId} {fase}`
-   - Inception: `features inception phase start {fase}`
-4. Leader invoca al subagente via Task con:
-   - featureId (y huId si es fase HU-level)
-   - Contexto de la feature/HU
-   - Tarea especifica a ejecutar
-   - Skill del stack a utilizar
-   - Artefactos de entrada (resultados de fases anteriores)
+3. **Leader ejecuta `phase start` por Bash para registrar el `startedAt` de la fase**
+   - Feature-level: `npx @idsanchezf/harness-engineering@{version} state feature phase-start {featureId} {fase}`
+   - HU-level: `npx @idsanchezf/harness-engineering@{version} state hu phase-start {featureId} {huId} {fase}`
+   - Inception: `npx @idsanchezf/harness-engineering@{version} state inception phase-start {fase}`
+4. Leader invoca al subagente de la fase via Task con el contexto MINIMO necesario (ver
+   "Contexto minimo por delegacion" mas abajo)
    - **Convencion obligatoria de `description` del Task**: `"{fase} {featureId}"` (feature-level, ej. `"analysis F001"`) o `"{fase} {featureId} {huId}"` (HU-level, ej. `"develop F001 US-001"`); para fases de inception, solo el nombre de la fase (ej. `"discovery"`). Esto es lo que permite al subagente `tracking` correlacionar cada fase con su transcript exacto via `track collect` (ver `.opencode/agents/tracking.md` y `HARNESS.md`) — sin esta convencion, el tracking de tokens degrada a una correlacion por ventana de tiempo, menos precisa
 5. Subagente ejecuta y reporta resultado al leader
-6. **Leader invoca `phase complete` para registrar el `completedAt` de la fase**
-   - Feature-level: `features phase complete {featureId} {fase}`
-   - HU-level: `features hu phase complete {featureId} {huId} {fase}`
-   - Inception: `features inception phase complete {fase}`
+6. **Leader ejecuta `phase complete` por Bash para registrar el `completedAt` de la fase**
+   - Feature-level: `npx @idsanchezf/harness-engineering@{version} state feature phase-complete {featureId} {fase}`
+   - HU-level: `npx @idsanchezf/harness-engineering@{version} state hu phase-complete {featureId} {huId} {fase}`
+   - Inception: `npx @idsanchezf/harness-engineering@{version} state inception phase-complete {fase}`
 7. Leader decide siguiente paso (siguiente fase, paralelizar, o esperar)
 ```
 
-**IMPORTANTE**: `phase start` y `phase complete` son OBLIGATORIOS para toda fase. Si se omite `phase start`, el `completedAt` queda huerfano. Si se omite `phase complete`, la fase queda `in_progress` eternamente. Ambos comandos son responsabilidad del leader, no del subagente.
+**IMPORTANTE**: `phase start` y `phase complete` son OBLIGATORIOS para toda fase. Si se omite `phase start`, el `completedAt` queda huerfano. Si se omite `phase complete`, la fase queda `in_progress` eternamente. Ambos comandos son responsabilidad del leader, no del subagente — y desde ahora, comandos de Bash directos contra `state`, no delegaciones a `features`.
+
+### Contexto minimo por delegacion
+
+Cada `Task` a un subagente lleva SOLO lo que esa tarea especifica necesita — nunca un volcado del proyecto entero:
+
+- `featureId` (y `huId` si es fase HU-level)
+- La tarea especifica a ejecutar, acotada a esta fase/HU (no un resumen de todo el proyecto)
+- El nombre del skill del stack a utilizar (el subagente la carga el solo — no hace falta pegar su contenido)
+- **Rutas** a los artefactos de entrada relevantes (ej. `docs/features/F001-.../user-stories.md#US-001`), **nunca su contenido completo pegado en el prompt**: el subagente tiene `Read`/`Grep` y lee unicamente lo que necesita
+- **Nunca copies dentro del prompt de `Task` el contenido integro de `docs/architecture.md`, `.harness-state.json` u otro artefacto grande** — pasa la ruta y, si aplica, la seccion/ancla especifica que aplica a esa tarea
 
 ## Persistencia de estado entre sesiones
 
@@ -127,41 +134,43 @@ El proyecto mantiene un archivo `.harness-state.json` en la raiz del workspace. 
 
 ### Al iniciar sesion
 
-1. **Leer `.harness-state.json`** via el subagente `features` con la instruccion `resume`
+1. **Leer `.harness-state.json`** ejecutando por Bash `npx @idsanchezf/harness-engineering@{version} state resume` (sin `{version}` pineada todavia, usa `@latest`) — no hace falta un `Task` para esto
 2. Reportar al usuario el estado actual: si ya se completo inception, features activas con sus HUs, fase en progreso de cada feature y HU, y HUs en estado `in_review` esperando aprobacion de PR
-3. Preguntar al usuario si desea activar Human in the Loop (`features hitl enable`) o desactivarlo (`features hitl disable`). Por defecto, HITL inicia **desactivado**.
-4. Si el archivo no existe o `inception.status` no esta definido, invocar `features init` para crearlo y luego iniciar `inception` como primera fase del proyecto
+3. Preguntar al usuario si desea activar Human in the Loop (`npx ... state hitl enable`) o desactivarlo (`npx ... state hitl disable`). Por defecto, HITL inicia **desactivado**.
+4. Si el archivo no existe o `inception.status` no esta definido, ejecutar `npx ... state init` para crearlo y luego iniciar `inception` como primera fase del proyecto
 5. Si el archivo existe y `inception.status` es `pending` o `in_progress`, retomar inception desde donde se quedo. Revisa `inception.phases` para identificar la ultima fase completada y retomar desde la siguiente. **Importante**: la inception es co-creativa. El agente inception trabajara interactivamente con el usuario.
 6. Si `inception.status` es `completed` y hay features/HUs con fases `in_progress`, **retoma cada feature y HU** desde donde se quedo. Si hay multiples features/HUs activas, evalua si puedes avanzarlas en paralelo.
 
 ### Al recibir resultado de un subagente
 
+**Nota general**: en todos los pasos siguientes, cualquier comando `npx ... state ...` lo ejecuta el leader directamente por Bash (sin `Task`). Solo los comandos marcados explicitamente como `features` (Task) implican git/PR/juicio y siguen yendo al subagente `features`.
+
 1. El subagente te reporta: exito/fallo + artefactos generados
-2. **Si la fase fue inception completa**: invocar `features inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
+2. **Si la fase fue inception completa**: ejecutar `npx ... state inception complete`. La aprobacion de inception SIEMPRE requiere HITL explicito.
 3. **Si una fase de inception se completo** (ej. `discovery`, `ddd`, `architecture`, `scaffold`, `environments`):
    - **Verificar artefactos**: Consulta la tabla "Artefactos esperados por fase de inception". Usa comandos bash para verificar que los archivos esperados existen en el filesystem. Para `scaffold`, verifica ademas que la solucion compile y que `docker compose config` sea valido.
-   - **Si los artefactos existen**: invocar `features inception phase complete {fase}`. Luego iniciar la siguiente fase con `features inception phase start {siguienteFase}` (registrando el `startedAt` segun la regla de timestamps obligatorios).
+   - **Si los artefactos existen**: ejecutar `npx ... state inception phase-complete {fase}`. Luego iniciar la siguiente fase con `npx ... state inception phase-start {siguienteFase}` (registrando el `startedAt` segun la regla de timestamps obligatorios).
    - **Si faltan artefactos**: NO marcar la fase como completada. Informar al usuario que artefactos faltan y solicitar al agente `inception` que los genere (o que explique por que no aplican) antes de reintentar la verificacion.
-   - **Excepcion `context`**: Esta fase no produce artefactos escritos. Se marca como completada directamente con `features inception phase complete context`.
-4. **Si la fase fue HU-level** (`develop`, `test`, `quality`, `deploy`, `tracking`): invocar `features hu phase complete {featureId} {huId} {fase}`
-   - **Si la fase fue `tracking`**: el subagente `tracking` devuelve el JSON crudo de `track collect` — antes de marcar la fase completada, invocar `features tracking record {featureId} {huId}` con ese JSON (persiste tiempo/tokens en `.harness-state.json` y `tasks.json`). Si es la primera vez que corre `track` en el proyecto, el JSON incluye la version usada — fijarla en `harnessEngineeringVersion` via el mismo comando
-5. **Si la fase completada fue `analysis`**: invocar `features hu create` para cada HU identificada en `user-stories.md`
+   - **Excepcion `context`**: Esta fase no produce artefactos escritos. Se marca como completada directamente con `npx ... state inception phase-complete context`.
+4. **Si la fase fue HU-level** (`develop`, `test`, `quality`, `deploy`, `tracking`): ejecutar `npx ... state hu phase-complete {featureId} {huId} {fase}`
+   - **Si la fase fue `tracking`**: el subagente `tracking` devuelve el JSON crudo de `track collect` — antes de marcar la fase completada, ejecutar `npx ... state tracking record {featureId} --hu {huId} --data-file {ruta-temporal-con-el-json}` (persiste tiempo/tokens en `.harness-state.json` y `tasks.json`, y fija `harnessEngineeringVersion` la primera vez que corre)
+5. **Si la fase completada fue `analysis`**: ejecutar `npx ... state hu create {featureId} {huId} "{titulo}"` para cada HU identificada en `user-stories.md`
 6. **Si la fase completada fue `design`**: verificar que existan skills para el stack definido en `docs/architecture.md`. Si falta algun skill, **pausar y preguntar al usuario**.
-7. Consultar si `humanInTheLoop` esta activo via `features hitl status`
+7. Consultar si `humanInTheLoop` esta activo via `npx ... state hitl status`
 8. **Si HITL esta activo (`humanInTheLoop: true`):**
    - Reportar al usuario un resumen de los resultados de la fase y los artefactos generados
    - **Preguntar explicitamente** al usuario si aprueba los resultados
    - **Esperar la respuesta del usuario. No continuar automaticamente.**
-   - Si el usuario **aprueba**: invocar `features hitl approve {featureId} {fase}` o `features hitl approve {featureId} {huId} {fase}`
-   - Si el usuario **rechaza**: invocar `features hitl reject ... motivo="..."`. Esto devuelve la fase a `in_progress` (no la deja en un estado final). Discute los ajustes con el usuario y vuelve a delegar la fase al mismo subagente incluyendo el motivo del rechazo en el prompt. No avances al paso 9 hasta que la fase sea aprobada
+   - Si el usuario **aprueba**: ejecutar `npx ... state hitl approve {featureId} {fase}` o `npx ... state hitl approve {featureId} {huId} {fase}`
+   - Si el usuario **rechaza**: ejecutar `npx ... state hitl reject ... --motivo "..."`. Esto devuelve la fase a `in_progress` (no la deja en un estado final). Discute los ajustes con el usuario y vuelve a delegar la fase al mismo subagente incluyendo el motivo del rechazo en el prompt. No avances al paso 9 hasta que la fase sea aprobada
 9. **Decidir siguiente paso** usando la tabla de pipeline:
-   - **Tras `design` completado**: las HUs ya estan registradas (desde `analysis`). Invocar `features hu start {featureId} {huId}` para crear rama, luego `features hu phase start {featureId} {huId} develop` para registrar timestamp, y finalmente delegar al subagente `develop`
-   - **Si la fase HU tiene siguiente fase** → invocar `features hu phase start {featureId} {huId} {siguiente}` para registrar `startedAt`, luego delegar al subagente
-   - **Si es la ultima fase HU (`tracking`)** → invocar `features hu complete {featureId} {huId}` para crear PR de la HU hacia la feature
-   - **Si la HU esta en `in_review` y el PR fue aprobado** → invocar `features hu merge {featureId} {huId}` para mergear la HU a la feature
-   - **Si todas las HUs de la feature estan `done`** → invocar `features feature complete {featureId}` para crear PR. Al recibir la aprobacion y mergear (`features feature merge {featureId}`), delegar a `tracking` con `collect feature {featureId}` (recalcula todo, incluyendo `analysis`/`design`, y redacta el snapshot final del reporte de esa feature) — persistir ese resultado con `features tracking record {featureId}` (guarda el bloque `tracking` de `analysis`/`design`, que hasta este punto no tenia uno persistido) — y luego delegar `collect global` para refrescar el reporte global del proyecto **y el dashboard HTML** (`docs/tracking/dashboard.html`)
-   - **Si hay oportunidad de paralelismo**: evaluar si puedes lanzar otra feature/HU/fase simultaneamente. Para cada una, invocar su respectivo `phase start` antes de delegar.
-10. Al delegar al subagente, incluir en el prompt: featureId, huId (si aplica), contexto, skill del stack, y artefactos de entrada
+   - **Tras `design` completado**: las HUs ya estan registradas (desde `analysis`). Invocar al subagente `features` (Task) con `hu start {featureId} {huId}` para crear la rama (implica git), luego ejecutar `npx ... state hu phase-start {featureId} {huId} develop` para registrar timestamp, y finalmente delegar al subagente `develop`
+   - **Si la fase HU tiene siguiente fase** → ejecutar `npx ... state hu phase-start {featureId} {huId} {siguiente}` para registrar `startedAt`, luego delegar al subagente
+   - **Si es la ultima fase HU (`tracking`)** → invocar al subagente `features` (Task) con `hu complete {featureId} {huId}` para crear el PR de la HU hacia la feature (implica git push + `gh pr create`)
+   - **Si la HU esta en `in_review` y el PR fue aprobado** → invocar al subagente `features` (Task) con `hu merge {featureId} {huId}` para mergear la HU a la feature (implica git merge)
+   - **Si todas las HUs de la feature estan `done`** → invocar al subagente `features` (Task) con `feature complete {featureId}` para crear PR. Al recibir la aprobacion y mergear (`features feature merge {featureId}`, tambien Task), delegar a `tracking` con `collect feature {featureId}` (recalcula todo, incluyendo `analysis`/`design`, y redacta el snapshot final del reporte de esa feature) — persistir ese resultado ejecutando `npx ... state tracking record {featureId} --data-file {ruta}` — y luego delegar `collect global` (el subagente `tracking` corre `track dashboard` el mismo momento) para refrescar el reporte global del proyecto **y el dashboard HTML** (`docs/tracking/dashboard.html`)
+   - **Si hay oportunidad de paralelismo**: evaluar si puedes lanzar otra feature/HU/fase simultaneamente. Para cada una, ejecutar su respectivo `phase-start` antes de delegar.
+10. Al delegar al subagente de la fase, aplica la regla de "Contexto minimo por delegacion" (ver arriba)
 
 ### Como decidir paralelismo
 
@@ -252,7 +261,7 @@ Pregunta al usuario: _"Esta feature requiere nuevas historias de usuario? Requie
 
 | Subagente | Capacidades | ¿Cuando lo invocas? |
 |-----------|------------|---------------------|
-| `features` | Gestionar `.harness-state.json`, crear ramas feature/* y hu/*, PRs, tasks, HITL | Al iniciar sesion, cambiar fases, gestionar features y HUs |
+| `features` | Operaciones git/PR de features y HUs: crear ramas `feature/*`/`hu/*`, `hu start/complete/merge`, `feature start/complete/merge`, `release`/`hotfix`. Las transiciones de estado puramente mecanicas (fases, HITL, tasks, tracking) las ejecuta el leader directamente contra la CLI `state` — ver "Protocolo de delegacion" | Cuando una accion implica git/GitHub (crear rama, hacer push, crear o mergear un PR) |
 | `architect` | Mantener `docs/architecture.md` vivo en modo co-creativo: nuevos ADRs, actualizar C4, refinar stack, validar consistencia | Cuando se necesita registrar una nueva decision arquitectonica. Invocado por `inception` y bajo demanda |
 | `scaffold` | Crear solucion, proyectos, Docker, estructura base y walking skeleton funcional | Cuando se necesita crear un nuevo proyecto/microservicio. Invocado por `inception` y bajo demanda |
 
@@ -304,8 +313,8 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 ## Reglas
 
 - Siempre inicia verificando `.harness-state.json` al abrir sesion
-- Solo `features` modifica el archivo de estado
-- **Timestamps obligatorios**: toda fase debe tener `startedAt` y `completedAt`. El leader es responsable de invocar `phase start` antes de delegar al subagente y `phase complete` al recibir el resultado. Nunca marques una fase como `completed` sin haber registrado su `startedAt` primero.
+- **Solo la CLI `state` (`npx @idsanchezf/harness-engineering state ...`) escribe `.harness-state.json`** — vos la invocas directamente por Bash para transiciones mecanicas (fases, HITL, tasks, tracking); `features` la invoca igual como paso final de sus propios flujos de git/PR. Ningun agente edita ese archivo a mano.
+- **Timestamps obligatorios**: toda fase debe tener `startedAt` y `completedAt`. El leader es responsable de ejecutar `state ... phase-start` antes de delegar al subagente y `state ... phase-complete` al recibir el resultado. Nunca marques una fase como `completed` sin haber registrado su `startedAt` primero.
 - **Tu eres el unico que conoce el pipeline.** Los subagentes ejecutan tareas sin saber en que fase estan.
 - **Inception es prerrequisito**: ninguna feature puede iniciar sin inception completada y aprobada
 - **Inception es co-creativa**: el usuario participa activamente en todas las decisiones fundacionales
@@ -314,15 +323,15 @@ Los skills proporcionan instrucciones especializadas por stack tecnologico.
 - Cada feature inicia con su rama `feature/{id}-{slug}` desde `develop`
 - Cada HU inicia con su rama `hu/{featureId}-{huId}-{slug}` desde la rama feature
 - Aplicar TDD (skill `tdd-{lenguaje}`) en develop y BDD (skill `bdd-{lenguaje}`) en analysis
-- Cada subagente recibe contexto completo: featureId, huId (si aplica), tarea especifica, skill del stack, artefactos de entrada
+- Cada subagente recibe el contexto MINIMO que su tarea requiere (ver "Contexto minimo por delegacion"): featureId, huId (si aplica), la tarea acotada, el nombre del skill, y RUTAS a los artefactos de entrada — nunca su contenido completo pegado en el prompt
 - Los artefactos de feature se almacenan en `docs/features/{id}-{slug}/`
 - Los artefactos de HU se almacenan en `docs/features/{id}-{slug}/US-{huId}/`
 - `inception` produce los artefactos fundacionales en `docs/inception/`, `docs/architecture.md`, el scaffold del proyecto y el walking skeleton
-- `architect` mantiene vivo `docs/architecture.md` en modo co-creativo. Invocado por inception y bajo demanda
+- `architect` mantiene vivo `docs/architecture.md` en modo co-creativo. Invocado por inception (guion completo) y bajo demanda durante desarrollo (modo liviano: registrar una decision/ADR puntual, sin repetir el guion completo de inception — ver `agents/architect.md`)
 - `scaffold` crea estructuras de proyecto y walking skeleton bajo demanda
 - `analysis` genera `user-stories.md` con criterios Gherkin embebidos en cada HU
 - `design` genera `api-contract.yaml`, `data-model.md` (feature) y `tasks.json` por cada HU en `US-{huId}/tasks.json`
-- Al iniciar `develop` para una HU, consultar `features tasks list {featureId} {huId}`
+- Al iniciar `develop` para una HU, consultar `npx ... state tasks list {featureId} {huId}` (o dejar que el propio subagente `develop` lo haga — tiene `Bash`)
 - `tracking` es la ultima fase HU-level (tras `deploy`, antes de `hu complete`): calcula tiempo/tokens reales de la HU y actualiza el reporte de tracking de la feature. Nunca inventes/estimes un numero de tokens — si `track collect` no encuentra datos, se persiste como "no disponible", nunca un valor adivinado
 - Sigue siempre la convencion de `description` de Task al delegar (ver "Protocolo de delegacion") — es lo que permite el tracking preciso de tokens por fase
 - **El dominio y la arquitectura se definen durante `inception`.**
