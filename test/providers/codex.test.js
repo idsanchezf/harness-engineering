@@ -70,3 +70,14 @@ test('buildAgentsMdLeaderBlock produce el bloque delimitado del leader', () => {
   assert.ok(block.includes('<!-- harness-engineering:leader:codex:end -->'));
   assert.ok(!block.includes('.opencode/'));
 });
+
+test('una referencia a un agente especifico (ej. tracking.md) se traduce a .codex/agents/tracking.toml, no .md', () => {
+  const { parseAgentFile } = require('../../bin/lib/agent-frontmatter');
+  const parsedLeader = parseAgentFile(fs.readFileSync(path.join(AGENTS_DIR, 'leader.md'), 'utf8'));
+  const block = codex.buildAgentsMdLeaderBlock(parsedLeader);
+  assert.ok(
+    block.includes('.codex/agents/tracking.toml'),
+    'leader.md referencia .opencode/agents/tracking.md; en Codex los agentes son .toml, no .md'
+  );
+  assert.ok(!block.includes('.codex/agents/tracking.md'));
+});

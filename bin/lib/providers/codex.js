@@ -28,6 +28,7 @@ function adaptBodyForCodex(body) {
   return adaptBody(body, {
     agentsDir: CODEX_AGENTS_DIR,
     skillsDir: CODEX_SKILLS_DIR,
+    agentFileExt: 'toml',
     autoloadPhrase:
       'NO se cargan automaticamente en Codex (sin mecanismo nativo de autocarga de skills); quedan disponibles como referencia',
   });

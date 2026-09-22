@@ -36,7 +36,7 @@ git checkout feature/F001-crear-pedido
 git checkout -b hu/F001-US-001-registro-google-oauth2
 ```
 
-Al completar la HU (`features hu complete {featureId} {huId}`), se hace push y se crea un PR hacia la rama `feature/*` (ver `.opencode/agents/features.md`). Tras aprobacion, `features hu merge {featureId} {huId}` mergea a la feature.
+Al completar la HU (`features hu complete {featureId} {huId}`), se hace push y se crea un PR hacia la rama `feature/*` (ver el agente `features`). Tras aprobacion, `features hu merge {featureId} {huId}` mergea a la feature.
 
 Cuando todas las HUs de una feature estan `done`, `features feature complete {featureId}` crea el PR de la feature hacia `develop`.
 
@@ -53,7 +53,7 @@ Antes de completar cualquier PR (`hu complete`, `feature complete`, `release com
 | `spring-boot` | `mvn test` (o `gradle test`) | `mvn spotless:check` |
 | `rust-axum` | `cargo test` | `cargo fmt --check` |
 
-Si el stack del proyecto no aparece en esta tabla, usa el comando de test/format documentado en su propia skill (`.opencode/skills/{skill-del-stack}/SKILL.md`).
+Si el stack del proyecto no aparece en esta tabla, usa el comando de test/format documentado en la skill `{skill-del-stack}` correspondiente (se autocarga por nombre; su ubicacion exacta depende del CLI de agentes en uso).
 
 ## Convenciones de commit
 
