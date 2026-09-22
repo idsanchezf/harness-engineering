@@ -155,17 +155,28 @@ cargo test handlers::tests::creates_order_when_command_is_valid
 ### 3. REFACTOR — Mejorar sin romper
 
 ```bash
+cargo test handlers::tests::creates_order_when_command_is_valid
+# → VERDE: sigue pasando
+```
+
+Corre solo el test de la tarea actual, igual que en RED/GREEN — no el suite completo.
+El suite completo (`cargo test`) corre UNA sola vez, al terminar todas las tareas de la
+HU, no en cada ciclo individual.
+
+### 4. Al completar todas las tareas de la HU
+
+```bash
 cargo test
-# → VERDE: test result: ok
+# → VERDE: test result: ok (unica corrida del suite completo de la HU)
 ```
 
 ## Resiliencia entre sesiones
 
-El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `features hu phase start/complete`). Si la sesion se interrumpe a mitad de un ciclo:
+El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `npx @idsanchezf/harness-engineering state hu phase-start/phase-complete`, invocado por el leader). Si la sesion se interrumpe a mitad de un ciclo:
 
 1. Al retomar, `develop` relee el `tasks.json` de la HU para identificar que tarea estaba `in_progress`.
 2. Ejecuta `cargo test {modulo}::tests::{escenario}` de esa tarea para determinar en que estado quedo: si hay un `#[test]` fallando, retoma en RED/GREEN sobre ese escenario; si todos los existentes pasan, retoma en REFACTOR o continua con el siguiente escenario.
-3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `features task start`/`features task done`.
+3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `npx @idsanchezf/harness-engineering state task start`/`state task done`.
 
 El codigo y los tests existentes son siempre la fuente de verdad del punto exacto donde quedo el ciclo TDD.
 
@@ -185,7 +196,7 @@ El codigo y los tests existentes son siempre la fuente de verdad del punto exact
 - Nunca escribas codigo de produccion sin una prueba que lo exija
 - Nunca escribas mas de una prueba unitaria que falle a la vez
 - Nunca escribas mas codigo del necesario para pasar la prueba actual
-- Corre `cargo test` despues de cada ciclo RED-GREEN-REFACTOR
+- Corre solo el test de la tarea actual despues de cada ciclo RED-GREEN-REFACTOR; el suite completo (`cargo test`) corre UNA sola vez, al terminar todas las tareas de la HU
 - Tests unitarios en `#[cfg(test)] mod tests` dentro del mismo archivo de codigo
 - Nombramiento Gherkin: `{resultado}_when_{condicion}`
 - Patron AAA obligatorio con comentarios `// Arrange ----`, `// Act ----`, `// Assert ----`

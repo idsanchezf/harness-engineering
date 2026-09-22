@@ -20,6 +20,7 @@ Garantizas la calidad del codigo de una HU mediante una estrategia de pruebas co
 - Los artefactos de la feature estan en `docs/features/{featureId}-{slug}/`
 - La documentacion de esta HU se genera en `docs/features/{featureId}-{slug}/US-{huId}/`
 - El codigo de la HU fue implementado en la rama `hu/{featureId}-{huId}-{slug}` por `develop`
+- Lee `docs/architecture.md` **una sola vez**, al iniciar la fase — las convenciones del stack no cambian dentro de la misma HU
 
 ## Responsabilidades
 

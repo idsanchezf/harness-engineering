@@ -28,20 +28,27 @@ function adaptBodyForClaude(body) {
 // Claude Code no puede expresar (alli "tools" es una lista de herramientas permitidas,
 // no de comandos). Reglas aplicadas:
 //   - edit: "ask" (agentes de solo analisis, ej. quality) -> tools explicito sin
-//     Write/Edit, para preservar la intencion de "no deberia modificar codigo".
-//   - edit: "allow" (el resto) -> se omite `tools` (hereda todas las herramientas del
-//     sistema, incluida Task para delegar a otros subagentes) — es la aproximacion mas
-//     cercana a la postura de opencode, generalmente permisiva salvo por bash arbitrario.
-function mapToolsForClaude(parsed) {
+//     Write/Edit.
+//   - edit: "allow" (el resto) -> tools explicito CON Write/Edit.
+//   - En ambos casos se omite `Task`: ningun subagente documentado delega en otros
+//     subagentes, salvo `inception` (invoca a `architect`/`scaffold` como parte de su
+//     flujo co-creativo — ver inception.md) — ese es el unico que hereda el set
+//     completo de herramientas (incluido Task). Restringir Task en el resto evita que
+//     cualquier subagente spawnee sub-subagentes sin un caso de uso documentado que lo
+//     justifique (amplificador de costo/tiempo sin contrapartida).
+const AGENTS_THAT_DELEGATE = new Set(['inception']);
+
+function mapToolsForClaude(parsed, name) {
+  if (AGENTS_THAT_DELEGATE.has(name)) return undefined;
   if (parsed.edit === 'ask') {
     return 'Read, Grep, Glob, Bash';
   }
-  return undefined;
+  return 'Read, Grep, Glob, Bash, Write, Edit';
 }
 
 function buildClaudeAgentFile(name, parsed) {
   const lines = ['---', `name: ${name}`, `description: ${parsed.description}`];
-  const tools = mapToolsForClaude(parsed);
+  const tools = mapToolsForClaude(parsed, name);
   if (tools) lines.push(`tools: ${tools}`);
   lines.push('---', '');
   return lines.join('\n') + adaptBodyForClaude(parsed.body) + '\n';

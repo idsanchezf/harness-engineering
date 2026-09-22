@@ -28,7 +28,8 @@ El tracking de los pasos TDD es interno a esta fase. No se persiste en `.harness
 
 1. Verificar que estas en la rama `hu/{featureId}-{huId}-{slug}` (el leader ya la creo via `features hu start`)
 2. Cargar el `tasks.json` de la HU: `docs/features/{featureId}-{slug}/US-{huId}/tasks.json`
-3. Reportar al leader: tareas pendientes
+3. Leer `docs/architecture.md` **una sola vez**, al iniciar la HU — las convenciones del stack no cambian entre tareas ni entre ciclos RED-GREEN-REFACTOR de la misma HU, asi que no hace falta releerlo en cada uno
+4. Reportar al leader: tareas pendientes
 
 ## Responsabilidades por capa
 

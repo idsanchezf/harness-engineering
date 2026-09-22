@@ -239,7 +239,7 @@ Ejecutar `dotnet test --filter "FullyQualifiedName~{Clase}Tests"` → **VERDE**.
 - Extraer validacion a FluentValidator
 - Mover logica de creacion a metodo de fabrica en la entidad
 - Introducir Value Objects para encapsular reglas
-- Ejecutar `dotnet test` despues de cada micro-cambio
+- Ejecutar `dotnet test --filter "FullyQualifiedName~{Clase}Tests"` despues de cada micro-cambio (solo la clase de la tarea actual, no el suite completo)
 
 ### 4. Siguiente escenario (RED → GREEN → REFACTOR)
 
@@ -249,7 +249,14 @@ Agregar otro `[Fact]` en el mismo archivo `HandleAsyncTests.cs`:
 Should_ReturnError_When_ProductNotFound
 ```
 
-Ciclo RED-GREEN-REFACTOR se repite hasta cubrir todos los escenarios del metodo.
+Ciclo RED-GREEN-REFACTOR se repite hasta cubrir todos los escenarios del metodo, corriendo siempre el filtro acotado a la clase — nunca el suite completo.
+
+### 5. Al completar todas las tareas de la HU
+
+```bash
+dotnet test
+# → VERDE: unica corrida del suite completo de la HU
+```
 
 ## Convenciones de la clase de test
 
@@ -295,11 +302,11 @@ public class {Metodo}Tests
 
 ## Resiliencia entre sesiones
 
-El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `features hu phase start/complete`). Si la sesion se interrumpe a mitad de un ciclo:
+El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `npx @idsanchezf/harness-engineering state hu phase-start/phase-complete`, invocado por el leader). Si la sesion se interrumpe a mitad de un ciclo:
 
-1. Al retomar, `develop` relee el `tasks.json` de la HU (`docs/features/{id}-{slug}/US-{huId}/tasks.json`, ver `.opencode/agents/features.md`) para identificar que tarea estaba `in_progress`.
+1. Al retomar, `develop` relee el `tasks.json` de la HU (`docs/features/{id}-{slug}/US-{huId}/tasks.json`, ver el agente `features`) para identificar que tarea estaba `in_progress`.
 2. Ejecuta `dotnet test --filter "FullyQualifiedName~{Clase}Tests"` de esa tarea para determinar en que estado quedo: si hay un `[Fact]` fallando, retoma en RED/GREEN sobre ese escenario; si todos los existentes pasan, retoma en REFACTOR o continua con el siguiente escenario del metodo.
-3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `features task start {featureId} {huId} {taskId}` / `features task done {featureId} {huId} {taskId}`.
+3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `npx @idsanchezf/harness-engineering state task start {featureId} {huId} {taskId}` / `state task done {featureId} {huId} {taskId}`.
 
 El codigo y los tests existentes son siempre la fuente de verdad del punto exacto donde quedo el ciclo TDD; no dependas de un campo transitorio en `.harness-state.json` que podria desincronizarse del codigo real.
 
@@ -317,7 +324,7 @@ El codigo y los tests existentes son siempre la fuente de verdad del punto exact
 - Nunca escribas codigo de produccion sin una prueba que lo exija
 - Nunca escribas mas de una prueba unitaria que falle a la vez
 - Nunca escribas mas codigo del necesario para pasar la prueba actual
-- Corre `dotnet test` despues de cada ciclo RED-GREEN-REFACTOR
+- Corre solo la clase de test de la tarea actual despues de cada ciclo RED-GREEN-REFACTOR; el suite completo (`dotnet test`) corre UNA sola vez, al terminar todas las tareas de la HU
 - Una carpeta por clase probada (`{Clase}Tests/`)
 - Un archivo `.cs` por metodo con **todos** sus escenarios dentro
 - Nombramiento Gherkin: `Should_{Resultado}_When_{Condicion}` para cada `[Fact]`

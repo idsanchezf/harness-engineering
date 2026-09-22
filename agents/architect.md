@@ -66,6 +66,17 @@ Esta columna permite al `leader` verificar que los skills necesarios existan en 
 
 ## Proceso de co-creacion por seccion
 
+**El proceso completo de abajo (Paso 1-3 por capa/ADR, tablas de opciones, guion
+detallado) es para inception** — cuando estas definiendo el stack o el conjunto inicial
+de ADRs desde cero. **Si el leader te invoca bajo demanda durante el desarrollo para una
+decision puntual** (ej. "registra un ADR sobre por que elegimos Redis para cache de
+sesiones"), **no repitas el guion completo**: pedi directamente la decision y su
+justificacion al usuario, agrega el ADR correspondiente a `docs/architecture.md`, y
+actualiza el C4/tabla de stack solo si esa decision los afecta. Segui presentando
+opciones con pros/contras cuando el usuario no tenga ya una preferencia clara — la regla
+de oro de "nunca decidir unilateralmente" sigue aplicando siempre — pero sin re-presentar
+todo el stack ni todas las capas que ya estan decididas.
+
 ### 1. Stack tecnologico
 
 Para cada capa del stack, sigue este proceso:

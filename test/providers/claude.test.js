@@ -36,15 +36,40 @@ test('inyecta el bloque leader en CLAUDE.md, sin rutas .opencode/ colgadas', () 
   }
 });
 
-test('un agente edit:ask (ej. quality) genera tools: restringido; edit:allow omite tools', () => {
+test('una referencia a un agente especifico (ej. tracking.md) se traduce a .claude/agents/tracking.md (misma extension)', () => {
+  const dir = makeTmpDir();
+  try {
+    claude.scaffold(dir);
+    const claudeMd = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+    assert.ok(claudeMd.includes('.claude/agents/tracking.md'));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test('un agente edit:ask (ej. quality) genera tools: sin Write/Edit; edit:allow los incluye — ninguno de los dos incluye Task', () => {
   const dir = makeTmpDir();
   try {
     claude.scaffold(dir);
     const quality = fs.readFileSync(path.join(dir, '.claude', 'agents', 'quality.md'), 'utf8');
     assert.ok(quality.includes('tools: Read, Grep, Glob, Bash'));
+    assert.ok(!quality.includes('Write'));
+    assert.ok(!/tools:.*Task/.test(quality));
 
     const develop = fs.readFileSync(path.join(dir, '.claude', 'agents', 'develop.md'), 'utf8');
-    assert.ok(!develop.includes('tools:'));
+    assert.ok(develop.includes('tools: Read, Grep, Glob, Bash, Write, Edit'));
+    assert.ok(!/tools:.*Task/.test(develop));
+  } finally {
+    cleanup(dir);
+  }
+});
+
+test('inception es el unico subagente que conserva Task (delega en architect/scaffold)', () => {
+  const dir = makeTmpDir();
+  try {
+    claude.scaffold(dir);
+    const inception = fs.readFileSync(path.join(dir, '.claude', 'agents', 'inception.md'), 'utf8');
+    assert.ok(!inception.includes('tools:'), 'inception hereda todas las herramientas (sin restriccion), incluida Task');
   } finally {
     cleanup(dir);
   }

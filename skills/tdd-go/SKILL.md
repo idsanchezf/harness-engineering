@@ -120,21 +120,32 @@ go test ./tests/unit/application/orders/ -v -run TestHandle
 ### 3. REFACTOR — Mejorar sin romper
 
 ```bash
-go test ./tests/unit/... -v
-# → VERDE: todos pasan
+go test ./tests/unit/application/orders/ -v -run TestHandle
+# → VERDE: sigue pasando
 ```
+
+Corre solo el paquete/test de la tarea actual, igual que en RED/GREEN — no el suite
+completo. El suite completo (`go test ./tests/unit/... -v`) corre UNA sola vez, al
+terminar todas las tareas de la HU, no en cada ciclo individual.
 
 ### 4. Siguiente escenario
 
 Agregar otra `func Test` en el mismo archivo y repetir el ciclo.
 
+### 5. Al completar todas las tareas de la HU
+
+```bash
+go test ./tests/unit/... -v
+# → VERDE: todos pasan (unica corrida del suite completo de la HU)
+```
+
 ## Resiliencia entre sesiones
 
-El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `features hu phase start/complete`). Si la sesion se interrumpe a mitad de un ciclo:
+El progreso del ciclo TDD (que escenario esta en RED/GREEN/REFACTOR) es interno a la ejecucion de `develop` y **no se persiste** en `.harness-state.json` — solo el estado de la fase `develop` de la HU se persiste (via `npx @idsanchezf/harness-engineering state hu phase-start/phase-complete`, invocado por el leader). Si la sesion se interrumpe a mitad de un ciclo:
 
 1. Al retomar, `develop` relee el `tasks.json` de la HU para identificar que tarea estaba `in_progress`.
 2. Ejecuta `go test ./... -run Test{Nombre}` de esa tarea para determinar en que estado quedo: si hay un `func Test` fallando, retoma en RED/GREEN sobre ese escenario; si todos los existentes pasan, retoma en REFACTOR o continua con el siguiente escenario.
-3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `features task start`/`features task done`.
+3. El unico estado persistido es el de la tarea en `tasks.json` (`pending`/`in_progress`/`done`), actualizado via `npx @idsanchezf/harness-engineering state task start`/`state task done`.
 
 El codigo y los tests existentes son siempre la fuente de verdad del punto exacto donde quedo el ciclo TDD.
 
@@ -154,7 +165,7 @@ El codigo y los tests existentes son siempre la fuente de verdad del punto exact
 - Nunca escribas codigo de produccion sin una prueba que lo exija
 - Nunca escribas mas de una prueba unitaria que falle a la vez
 - Nunca escribas mas codigo del necesario para pasar la prueba actual
-- Corre `go test` despues de cada ciclo RED-GREEN-REFACTOR
+- Corre solo el paquete/test de la tarea actual despues de cada ciclo RED-GREEN-REFACTOR; el suite completo (`go test ./tests/unit/...`) corre UNA sola vez, al terminar todas las tareas de la HU
 - Un archivo `{modulo}_test.go` por clase/funcion con todos sus escenarios
 - Nombramiento Gherkin: `Test{Nombre}_{Resultado}_When_{Condicion}`
 - Patron AAA obligatorio con comentarios `// Arrange ----`, `// Act ----`, `// Assert ----`
