@@ -77,6 +77,14 @@ opciones con pros/contras cuando el usuario no tenga ya una preferencia clara �
 de oro de "nunca decidir unilateralmente" sigue aplicando siempre — pero sin re-presentar
 todo el stack ni todas las capas que ya estan decididas.
 
+**Tampoco releas `docs/architecture.md` completo para esto.** El archivo acumula un ADR
+por decision tomada durante toda la vida del proyecto — para agregar uno nuevo alcanza
+con: la tabla de stack (corta, para saber si la decision la afecta) y, si necesitas
+verificar que no contradice una decision previa, un grep del tema puntual (ej. "cache",
+"message broker") sobre la seccion de ADRs en vez de leerla entera. Reservá la lectura
+completa del archivo para cuando el usuario pide explicitamente una revision de
+consistencia global.
+
 ### 1. Stack tecnologico
 
 Para cada capa del stack, sigue este proceso:

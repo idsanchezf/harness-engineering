@@ -127,6 +127,7 @@ Cada `Task` a un subagente lleva SOLO lo que esa tarea especifica necesita — n
 - El nombre del skill del stack a utilizar (el subagente la carga el solo — no hace falta pegar su contenido)
 - **Rutas** a los artefactos de entrada relevantes (ej. `docs/features/F001-.../user-stories.md#US-001`), **nunca su contenido completo pegado en el prompt**: el subagente tiene `Read`/`Grep` y lee unicamente lo que necesita
 - **Nunca copies dentro del prompt de `Task` el contenido integro de `docs/architecture.md`, `.harness-state.json` u otro artefacto grande** — pasa la ruta y, si aplica, la seccion/ancla especifica que aplica a esa tarea
+- **Documentos que crecen con el proyecto** (`docs/architecture.md` acumula un ADR por decision; `docs/inception/domain-model.md`, `business-rules.md`, `domain-events.md`, `ubiquitous-language.md` acumulan una seccion por bounded context) merecen especial cuidado: ni siquiera basta con pasar la ruta del archivo — indica ademas la seccion/bounded context esperado (ej. "seccion `Bounded Context: Pagos` de `domain-model.md`"), para que el subagente no tenga la tentacion de leerlo entero "por las dudas". `analysis.md` y `architect.md` ya siguen este patron — usalo de referencia
 
 ## Persistencia de estado entre sesiones
 
