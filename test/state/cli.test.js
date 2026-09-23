@@ -69,13 +69,71 @@ test('CLI: subcomando desconocido devuelve {ok:false} y exitCode 1', () => {
   }
 });
 
-test('CLI: resume devuelve el estado tal cual lo ve store.loadState', () => {
+test('CLI: resume devuelve el resumen (summarizeState) por defecto', () => {
   const dir = makeTmpDir();
   try {
     store.saveState(dir, store.initialState());
     const { logs } = runInDir(dir, ['resume']);
     const result = JSON.parse(logs[0]);
     assert.equal(result.inception.status, 'pending');
+    assert.deepEqual(result.featureCounts, {});
+  } finally {
+    process.exitCode = undefined;
+    cleanup(dir);
+  }
+});
+
+test('CLI: resume --full devuelve el estado crudo, sin resumir', () => {
+  const dir = makeTmpDir();
+  try {
+    runInDir(dir, ['feature', 'register', '--id', 'F001', '--slug', 'a']);
+    runInDir(dir, ['hu', 'create', 'F001', 'US-001', 'titulo']);
+    runInDir(dir, ['hu', 'mark-done', 'F001', 'US-001']);
+    runInDir(dir, ['feature', 'mark-done', 'F001']);
+
+    const { logs: summaryLogs } = runInDir(dir, ['resume']);
+    const summary = JSON.parse(summaryLogs[0]);
+    assert.equal(summary.features[0].userStories, undefined, 'la feature done queda como stub, sin userStories');
+
+    const { logs: fullLogs } = runInDir(dir, ['resume', '--full']);
+    const full = JSON.parse(fullLogs[0]);
+    assert.equal(full.features[0].userStories[0].id, 'US-001');
+  } finally {
+    process.exitCode = undefined;
+    cleanup(dir);
+  }
+});
+
+test('CLI: list-features devuelve campos minimos por defecto y filtra por --status', () => {
+  const dir = makeTmpDir();
+  try {
+    runInDir(dir, ['feature', 'register', '--id', 'F001', '--slug', 'a', '--name', 'Uno']);
+    runInDir(dir, ['feature', 'register', '--id', 'F002', '--slug', 'b', '--name', 'Dos']);
+    runInDir(dir, ['feature', 'mark-done', 'F001']);
+
+    const { logs: allLogs } = runInDir(dir, ['list-features']);
+    const all = JSON.parse(allLogs[0]);
+    assert.deepEqual(Object.keys(all[0]).sort(), ['docsPath', 'id', 'name', 'status']);
+
+    const { logs: filteredLogs } = runInDir(dir, ['list-features', '--status', 'done']);
+    const filtered = JSON.parse(filteredLogs[0]);
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].id, 'F001');
+  } finally {
+    process.exitCode = undefined;
+    cleanup(dir);
+  }
+});
+
+test('CLI: feature show devuelve el detalle completo de una sola feature', () => {
+  const dir = makeTmpDir();
+  try {
+    runInDir(dir, ['feature', 'register', '--id', 'F001', '--slug', 'a']);
+    runInDir(dir, ['hu', 'create', 'F001', 'US-001', 'titulo']);
+    const { logs } = runInDir(dir, ['feature', 'show', 'F001']);
+    const result = JSON.parse(logs[0]);
+    assert.equal(result.id, 'F001');
+    assert.equal(result.userStories[0].id, 'US-001');
   } finally {
     process.exitCode = undefined;
     cleanup(dir);

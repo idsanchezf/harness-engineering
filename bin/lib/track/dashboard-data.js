@@ -12,11 +12,11 @@ function sumTime(entries) {
   return entries.reduce((acc, e) => acc + (e.durationSeconds || 0), 0);
 }
 
-function indexTasksByHu(projectDir, feature) {
+function indexTasksByHu(projectDir, feature, taskCache) {
   const byHu = {};
   for (const hu of feature.userStories || []) {
     const byId = {};
-    for (const task of loadTasks(projectDir, hu.docsPath)) {
+    for (const task of loadTasks(projectDir, hu.docsPath, taskCache)) {
       byId[task.id] = task;
     }
     byHu[hu.id] = byId;
@@ -28,9 +28,12 @@ function indexTasksByHu(projectDir, feature) {
 // global, misma fuente de verdad que el reporte markdown) y la enriquece con nombres
 // legibles (nombre de feature, titulo de HU, descripcion de tarea) que `collect()` no
 // incluye porque su contrato es para que los AGENTES lo interpreten, no para render.
+// `taskCache` se comparte con `collect()` para que cada tasks.json se lea una sola vez
+// por corrida, en vez de una vez dentro de collect() y otra en indexTasksByHu.
 function buildDashboardData(projectDir) {
   const state = loadState(projectDir);
-  const result = collect({ projectDir });
+  const taskCache = new Map();
+  const result = collect({ projectDir, taskCache });
 
   const byFeatureId = {};
   for (const p of result.phases) {
@@ -44,7 +47,7 @@ function buildDashboardData(projectDir) {
 
   const features = (state.features || []).map((feature) => {
     const entry = byFeatureId[feature.id] || { phases: [], tasks: [] };
-    const tasksByHu = indexTasksByHu(projectDir, feature);
+    const tasksByHu = indexTasksByHu(projectDir, feature, taskCache);
     const huTitleById = {};
     for (const hu of feature.userStories || []) huTitleById[hu.id] = hu.title || hu.id;
 

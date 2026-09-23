@@ -31,6 +31,19 @@ test('ciclo feliz de feature: register -> phase-start -> phase-complete -> mark-
   }
 });
 
+test('feature.show devuelve la feature completa (incluida su tracking si la tuviera)', () => {
+  const dir = makeTmpDir();
+  try {
+    feature.register(dir, { id: 'F001', slug: 'a' });
+    hu.create(dir, 'F001', 'US-001', 'titulo');
+    const shown = feature.show(dir, 'F001');
+    assert.equal(shown.id, 'F001');
+    assert.equal(shown.userStories[0].id, 'US-001');
+  } finally {
+    cleanup(dir);
+  }
+});
+
 test('register rechaza una feature duplicada', () => {
   const dir = makeTmpDir();
   try {

@@ -1,6 +1,6 @@
 'use strict';
 
-const { mutate, findFeature, FEATURE_PHASES } = require('./store');
+const { mutate, loadState, findFeature, FEATURE_PHASES } = require('./store');
 
 function nowIso() {
   return new Date().toISOString();
@@ -83,4 +83,12 @@ function markDone(projectDir, featureId) {
   });
 }
 
-module.exports = { register, phaseStart, phaseComplete, block, markInReview, markDone };
+// Detalle completo de UNA feature puntual (con sus HUs y tracking), para cuando el
+// leader necesita profundizar en una especifica sin cargar el resumen de todo el
+// proyecto (ver `state resume`/`state list-features`, que omiten este nivel de detalle
+// por defecto).
+function show(projectDir, featureId) {
+  return findFeature(loadState(projectDir), featureId);
+}
+
+module.exports = { register, phaseStart, phaseComplete, block, markInReview, markDone, show };

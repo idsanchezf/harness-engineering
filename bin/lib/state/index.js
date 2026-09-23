@@ -80,6 +80,8 @@ function handleFeature(verb, positional, flags) {
       return output(feature.markInReview(projectDir, positional[0], flags['pr-url']));
     case 'mark-done':
       return output(feature.markDone(projectDir, positional[0]));
+    case 'show':
+      return output(feature.show(projectDir, positional[0]));
     default:
       throw new Error(`feature: subcomando desconocido "${verb}"`);
   }
@@ -166,8 +168,14 @@ function handleTracking(verb, flags) {
 }
 
 function run(argv) {
-  const [noun, verb, ...rest] = argv;
-  const { positional, flags } = parseArgs(rest);
+  const [noun, ...restArgv] = argv;
+  // Flags pueden aparecer en cualquier posicion despues del noun (`state resume --full`
+  // no tiene "verb" real, a diferencia de `state feature block F001 --motivo "..."`) —
+  // parsear TODO el resto de una y separar el verb recien despues evita que un flag sea
+  // interpretado por error como el verb (bug real: antes `--full` quedaba en `verb` y
+  // nunca llegaba a `flags`).
+  const { positional: restPositional, flags } = parseArgs(restArgv);
+  const [verb, ...positional] = restPositional;
   const projectDir = process.cwd();
 
   try {
@@ -176,12 +184,21 @@ function run(argv) {
         output(store.saveState(projectDir, store.initialState()));
         break;
       case 'resume':
-      case 'status':
-        output(store.loadState(projectDir));
+      case 'status': {
+        const state = store.loadState(projectDir);
+        output(flags.full ? state : store.summarizeState(state));
         break;
-      case 'list-features':
-        output(store.loadState(projectDir).features || []);
+      }
+      case 'list-features': {
+        const state = store.loadState(projectDir);
+        const filtered = store.filterFeatures(state, { status: flags.status });
+        output(
+          flags.full
+            ? filtered
+            : filtered.map((f) => ({ id: f.id, name: f.name ?? null, status: f.status, docsPath: f.docsPath ?? null }))
+        );
         break;
+      }
       case 'inception':
         handleInception(verb, positional);
         break;

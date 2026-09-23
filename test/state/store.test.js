@@ -59,3 +59,54 @@ test('findFeature / findHu lanzan si no existen', () => {
   state.features.push({ id: 'F001', userStories: [] });
   assert.throws(() => store.findHu(state.features[0], 'US-999'));
 });
+
+test('stripTrackingFromPhases quita el bloque tracking sin tocar el resto de la fase', () => {
+  const out = store.stripTrackingFromPhases({
+    develop: { status: 'completed', startedAt: 'a', completedAt: 'b', tracking: { tokens: { total: 100 } } },
+  });
+  assert.deepEqual(out, { develop: { status: 'completed', startedAt: 'a', completedAt: 'b' } });
+});
+
+test('summarizeFeature colapsa una feature done a un stub, y limpia tracking de una activa', () => {
+  const done = store.summarizeFeature({
+    id: 'F001',
+    name: 'Uno',
+    slug: 'uno',
+    status: 'done',
+    completedAt: '2026-01-01',
+    phases: { analysis: { status: 'completed', tracking: { tokens: { total: 1 } } } },
+    userStories: [{ id: 'US-001', phases: {} }],
+  });
+  assert.deepEqual(done, { id: 'F001', name: 'Uno', slug: 'uno', status: 'done', completedAt: '2026-01-01' });
+
+  const active = store.summarizeFeature({
+    id: 'F002',
+    status: 'in_progress',
+    phases: { analysis: { status: 'completed', tracking: { tokens: { total: 1 } } } },
+    userStories: [{ id: 'US-001', phases: { develop: { status: 'in_progress', tracking: { tokens: { total: 2 } } } } }],
+  });
+  assert.equal(active.phases.analysis.tracking, undefined);
+  assert.equal(active.userStories[0].phases.develop.tracking, undefined);
+});
+
+test('summarizeState cuenta features por status y resume cada una', () => {
+  const state = store.initialState();
+  state.features.push(
+    { id: 'F001', status: 'done', phases: {}, userStories: [] },
+    { id: 'F002', status: 'in_progress', phases: {}, userStories: [] },
+    { id: 'F003', status: 'in_progress', phases: {}, userStories: [] }
+  );
+  const summary = store.summarizeState(state);
+  assert.deepEqual(summary.featureCounts, { done: 1, in_progress: 2 });
+  assert.equal(summary.features.length, 3);
+});
+
+test('filterFeatures sin status devuelve todas; con status filtra', () => {
+  const state = store.initialState();
+  state.features.push({ id: 'F001', status: 'done' }, { id: 'F002', status: 'in_progress' });
+  assert.equal(store.filterFeatures(state).length, 2);
+  assert.deepEqual(
+    store.filterFeatures(state, { status: 'done' }).map((f) => f.id),
+    ['F001']
+  );
+});

@@ -65,6 +65,69 @@ function findHu(feature, huId) {
   return hu;
 }
 
+// El bloque `tracking` (tokens, sessionsMatched[], warnings) es para reportes, nunca
+// para decisiones de orquestacion — se omite en los resumenes para no inflar el
+// contexto del leader con datos que no necesita para decidir el siguiente paso.
+function stripTrackingFromPhases(phases) {
+  const out = {};
+  for (const [name, phase] of Object.entries(phases || {})) {
+    const { tracking, ...rest } = phase;
+    out[name] = rest;
+  }
+  return out;
+}
+
+// Las features `done` quedan como stub (sin fases/HUs/tracking): una vez cerradas, el
+// leader solo necesita saber que existen y su nombre, no su historial completo de
+// fases — ese detalle sigue disponible via `feature show {id}` si hace falta.
+function summarizeFeature(feature) {
+  if (feature.status === 'done') {
+    return {
+      id: feature.id,
+      name: feature.name ?? null,
+      slug: feature.slug ?? null,
+      status: feature.status,
+      completedAt: feature.completedAt ?? null,
+    };
+  }
+  return {
+    ...feature,
+    phases: stripTrackingFromPhases(feature.phases),
+    userStories: (feature.userStories || []).map((hu) => ({
+      ...hu,
+      phases: stripTrackingFromPhases(hu.phases),
+    })),
+  };
+}
+
+// Resumen por defecto de `resume`/`status`: conteos por status (para saber cuanto hay
+// sin cargarlo todo) + detalle completo SOLO de las features activas, sin tracking. El
+// volcado historico completo (incluidas las `done` con su detalle y tracking) sigue
+// disponible via `--full` para los pocos casos que de verdad lo necesiten.
+function summarizeState(state) {
+  const features = state.features || [];
+  const featureCounts = features.reduce((acc, f) => {
+    acc[f.status] = (acc[f.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    project: state.project,
+    updatedAt: state.updatedAt,
+    humanInTheLoop: state.humanInTheLoop,
+    harnessEngineeringVersion: state.harnessEngineeringVersion,
+    inception: state.inception,
+    featureCounts,
+    features: features.map(summarizeFeature),
+  };
+}
+
+function filterFeatures(state, { status } = {}) {
+  const features = state.features || [];
+  if (!status) return features;
+  return features.filter((f) => f.status === status);
+}
+
 module.exports = {
   statePath,
   initialState,
@@ -73,6 +136,10 @@ module.exports = {
   mutate,
   findFeature,
   findHu,
+  stripTrackingFromPhases,
+  summarizeFeature,
+  summarizeState,
+  filterFeatures,
   INCEPTION_PHASES,
   HU_PHASES,
   FEATURE_PHASES,
