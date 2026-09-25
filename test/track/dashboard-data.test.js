@@ -77,3 +77,58 @@ test('buildDashboardData lee cada tasks.json una sola vez (comparte taskCache co
     cleanup(dir);
   }
 });
+
+test('buildDashboardData separa tokens nuevos, output y procesados (con fallback sin processed)', () => {
+  const dir = makeTmpDir();
+  try {
+    const state = {
+      project: 'Demo',
+      features: [
+        {
+          id: 'F001',
+          name: 'Feature demo',
+          status: 'in_progress',
+          phases: {},
+          userStories: [
+            {
+              id: 'US-001',
+              title: 'HU demo',
+              docsPath: 'docs/features/F001-demo/US-001/',
+              phases: {
+                develop: {
+                  status: 'completed',
+                  startedAt: '2026-01-01T00:00:00Z',
+                  completedAt: '2026-01-01T01:00:00Z',
+                  tracking: {
+                    tokensSource: 'claude-transcript',
+                    tokens: { input: 4, output: 45, cacheCreationInput: 1200, cacheReadInput: 41000, total: 1249, processed: 42249 },
+                  },
+                },
+                test: {
+                  status: 'completed',
+                  startedAt: '2026-01-01T01:00:00Z',
+                  completedAt: '2026-01-01T02:00:00Z',
+                  tracking: {
+                    tokensSource: 'opencode-stats',
+                    tokens: { input: 100, output: 50, cacheCreationInput: 0, cacheReadInput: 0, total: 150 },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    };
+    fs.writeFileSync(path.join(dir, '.harness-state.json'), JSON.stringify(state), 'utf8');
+
+    const data = buildDashboardData(dir);
+
+    assert.equal(data.totals.tokens, 1249 + 150);
+    assert.equal(data.totals.outputTokens, 45 + 50);
+    assert.equal(data.totals.processedTokens, 42249 + 150);
+    assert.equal(data.features[0].outputTokens, 95);
+    assert.equal(data.features[0].processedTokens, 42399);
+  } finally {
+    cleanup(dir);
+  }
+});

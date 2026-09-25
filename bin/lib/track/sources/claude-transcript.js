@@ -50,14 +50,34 @@ function findSubagentFiles(projectDir) {
   return results;
 }
 
+// Tokens "nuevos" de una llamada: excluye cacheReadInput, que es el contexto ya
+// cacheado que el modelo relee en cada llamada (se factura a ~10% del input). Sumarlo
+// como consumo infla el total ~10x y no es comparable con otras fuentes (opencode ya
+// reporta total = input + output).
+function newTokens(t) {
+  return t.input + t.output + t.cacheCreationInput;
+}
+
+function processedTokens(t) {
+  return newTokens(t) + t.cacheReadInput;
+}
+
 // Lectura defensiva linea-por-linea: una linea corrupta o de un formato inesperado
 // nunca debe tirar abajo todo el parseo (el formato es interno de Claude Code y puede
 // cambiar entre versiones).
+//
+// Claude Code escribe una linea por bloque de contenido (thinking, text, tool_use) de
+// un mismo mensaje del asistente, y cada linea repite el `usage` completo de ese
+// mensaje. Por eso el uso se agrupa por message.id (o requestId) y se toma el maximo
+// de cada campo — la ultima linea trae el output_tokens final — antes de sumar.
+// Sumar linea por linea contaba cada mensaje ~2x.
 function readUsageAndRange(jsonlPath) {
   const totals = { input: 0, output: 0, cacheCreationInput: 0, cacheReadInput: 0 };
+  const byMessage = new Map();
   let firstTimestamp = null;
   let lastTimestamp = null;
   let matchedAny = false;
+  let lineIndex = 0;
 
   let raw;
   try {
@@ -67,6 +87,7 @@ function readUsageAndRange(jsonlPath) {
   }
 
   for (const line of raw.split('\n')) {
+    lineIndex++;
     if (!line.trim()) continue;
     let entry;
     try {
@@ -83,14 +104,32 @@ function readUsageAndRange(jsonlPath) {
     const usage = entry.message && entry.message.usage;
     if (usage) {
       matchedAny = true;
-      totals.input += usage.input_tokens || 0;
-      totals.output += usage.output_tokens || 0;
-      totals.cacheCreationInput += usage.cache_creation_input_tokens || 0;
-      totals.cacheReadInput += usage.cache_read_input_tokens || 0;
+      const key = entry.message.id || entry.requestId || `line-${lineIndex}`;
+      const current = {
+        input: usage.input_tokens || 0,
+        output: usage.output_tokens || 0,
+        cacheCreationInput: usage.cache_creation_input_tokens || 0,
+        cacheReadInput: usage.cache_read_input_tokens || 0,
+      };
+      const previous = byMessage.get(key);
+      if (!previous) {
+        byMessage.set(key, current);
+      } else {
+        for (const field of Object.keys(current)) {
+          previous[field] = Math.max(previous[field], current[field]);
+        }
+      }
     }
   }
 
-  return { totals, firstTimestamp, lastTimestamp, matchedAny };
+  for (const usage of byMessage.values()) {
+    totals.input += usage.input;
+    totals.output += usage.output;
+    totals.cacheCreationInput += usage.cacheCreationInput;
+    totals.cacheReadInput += usage.cacheReadInput;
+  }
+
+  return { totals, firstTimestamp, lastTimestamp, matchedAny, messageCount: byMessage.size };
 }
 
 function descriptionMatches(description, expectedTokens) {
@@ -152,16 +191,16 @@ function collectClaudeTokens(projectDir, expectedTokens, window) {
   for (const file of matched) {
     const { totals: fileTotals, matchedAny } = readUsageAndRange(file.jsonlPath);
     if (!matchedAny) continue;
-    const fileTotal = fileTotals.input + fileTotals.output + fileTotals.cacheCreationInput + fileTotals.cacheReadInput;
     totals.input += fileTotals.input;
     totals.output += fileTotals.output;
     totals.cacheCreationInput += fileTotals.cacheCreationInput;
     totals.cacheReadInput += fileTotals.cacheReadInput;
-    sessionsMatched.push({ cli: 'claude', agentId: file.agentId, tokens: fileTotal });
+    sessionsMatched.push({ cli: 'claude', agentId: file.agentId, tokens: newTokens(fileTotals) });
   }
 
-  const total = totals.input + totals.output + totals.cacheCreationInput + totals.cacheReadInput;
-  if (total === 0) {
+  const total = newTokens(totals);
+  const processed = processedTokens(totals);
+  if (processed === 0) {
     return {
       tokens: null,
       source: 'unavailable',
@@ -171,7 +210,7 @@ function collectClaudeTokens(projectDir, expectedTokens, window) {
   }
 
   return {
-    tokens: { input: totals.input, output: totals.output, cacheCreationInput: totals.cacheCreationInput, cacheReadInput: totals.cacheReadInput, total },
+    tokens: { input: totals.input, output: totals.output, cacheCreationInput: totals.cacheCreationInput, cacheReadInput: totals.cacheReadInput, total, processed },
     source: 'claude-transcript',
     sessionsMatched,
     costUsd: null,
@@ -184,6 +223,8 @@ module.exports = {
   claudeProjectsDir,
   findSubagentFiles,
   readUsageAndRange,
+  newTokens,
+  processedTokens,
   descriptionMatches,
   windowsOverlap,
   collectClaudeTokens,

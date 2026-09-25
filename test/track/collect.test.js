@@ -64,7 +64,7 @@ function phaseWithCachedTracking(overrides = {}) {
     startedAt: '2026-01-01T00:00:00Z',
     completedAt: '2026-01-01T01:00:00Z',
     tracking: {
-      tokens: { input: 1, output: 2, total: 3 },
+      tokens: { input: 1, output: 2, cacheCreationInput: 0, cacheReadInput: 10, total: 3, processed: 13 },
       tokensSource: 'claude-transcript',
       sessionsMatched: [{ cli: 'claude', agentId: 'x', tokens: 3 }],
       costUsd: null,
@@ -97,13 +97,20 @@ test('collectPhase nunca reutiliza un resultado "unavailable" (tokens null), rei
   assert.notEqual(result.collectedAt, 'viejo', 'debio reintentar el calculo en vez de reusar el unavailable cacheado');
 });
 
+test('collectPhase recalcula un tracking de claude-transcript sin processed (parser anterior a v0.8.1)', () => {
+  const phaseObj = phaseWithCachedTracking();
+  delete phaseObj.tracking.tokens.processed;
+  const result = collectPhase('/no/existe/este/proyecto', 'develop', 'F001', 'US-001', phaseObj);
+  assert.notEqual(result.collectedAt, '2026-01-01T01:05:00Z', 'debio recalcular en vez de reusar el total inflado');
+});
+
 test('collectTask reutiliza el tracking ya persistido sin recalcular', () => {
   const task = {
     id: 'T001',
     startedAt: '2026-01-01T00:00:00Z',
     completedAt: '2026-01-01T01:00:00Z',
     tracking: {
-      tokens: { input: 1, output: 1, total: 2 },
+      tokens: { input: 1, output: 1, cacheCreationInput: 0, cacheReadInput: 0, total: 2, processed: 2 },
       tokensSource: 'claude-transcript',
       sessionsMatched: [],
       costUsd: null,

@@ -8,6 +8,19 @@ function sumTokens(entries) {
   return entries.reduce((acc, e) => acc + ((e.tokens && e.tokens.total) || 0), 0);
 }
 
+// Incluye la relectura de cache; las fuentes que no la reportan (opencode) aportan
+// su total.
+function sumProcessedTokens(entries) {
+  return entries.reduce((acc, e) => {
+    if (!e.tokens) return acc;
+    return acc + (e.tokens.processed != null ? e.tokens.processed : e.tokens.total || 0);
+  }, 0);
+}
+
+function sumOutputTokens(entries) {
+  return entries.reduce((acc, e) => acc + ((e.tokens && e.tokens.output) || 0), 0);
+}
+
 function sumTime(entries) {
   return entries.reduce((acc, e) => acc + (e.durationSeconds || 0), 0);
 }
@@ -80,6 +93,8 @@ function buildDashboardData(projectDir) {
       status: feature.status || 'unknown',
       timeSeconds: sumTime(entry.phases),
       tokens: sumTokens(entry.phases),
+      outputTokens: sumOutputTokens(entry.phases),
+      processedTokens: sumProcessedTokens(entry.phases),
       huCount: hus.length,
       coverage: buildCoverage(entry.phases.concat(entry.tasks)),
       featurePhases,
@@ -96,6 +111,8 @@ function buildDashboardData(projectDir) {
     totals: {
       timeSeconds: sumTime(result.phases),
       tokens: sumTokens(result.phases),
+      outputTokens: sumOutputTokens(result.phases),
+      processedTokens: sumProcessedTokens(result.phases),
       huCount: features.reduce((acc, f) => acc + f.huCount, 0),
       featureCount: features.length,
       coverage: result.coverage,
