@@ -8,7 +8,8 @@
 const opencode = require('./opencode');
 const claude = require('./claude');
 const codex = require('./codex');
+const antigravity = require('./antigravity');
 
-const PROVIDERS = [opencode, claude, codex];
+const PROVIDERS = [opencode, claude, codex, antigravity];
 
 module.exports = { PROVIDERS };
