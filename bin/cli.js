@@ -15,13 +15,13 @@ const { writeAgentsMd } = require('./lib/agents-md');
 const { PACKAGE_ROOT, AGENTS_DIR } = require('./lib/source-paths');
 
 const HELP = `
-${pc.bold('harness-engineering')} - scaffolding de la plantilla de agentes IA (opencode + Claude Code + Codex)
+${pc.bold('harness-engineering')} - scaffolding de la plantilla de agentes IA (opencode + Claude Code + Codex + Antigravity)
 
 Uso:
   npx @idsanchezf/harness-engineering [directorio] [opciones]
 
 Opciones:
-  --agent <id>    CLI(s) a instalar: opencode, claude, codex, o combinaciones separadas por
+  --agent <id>    CLI(s) a instalar: opencode, claude, codex, antigravity, o combinaciones separadas por
                   coma (ej. "opencode,claude") (o "all"). Sin esta opcion, en terminal
                   interactiva se pregunta; si no, se instalan todos.
   -y, --yes       Continua aunque el directorio destino no este vacio

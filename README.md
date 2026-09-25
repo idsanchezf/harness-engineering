@@ -1,6 +1,6 @@
 # Harness Engineering — Plantilla de Ingenieria de Software con Agentes
 
-Plantilla de ingenieria de arneses que orquesta el ciclo de vida completo de software mediante agentes especializados, con soporte multi-CLI (opencode, Claude Code y Codex CLI). Agnostica a tecnologias: el stack se define durante `inception`, y agnostica al CLI: la fuente de verdad de agentes y skills vive en `agents/`/`skills/` en la raiz, y `bin/` traduce esa fuente al formato de cada CLI instalado.
+Plantilla de ingenieria de arneses que orquesta el ciclo de vida completo de software mediante agentes especializados, con soporte multi-CLI (opencode, Claude Code, Codex CLI y Google Antigravity). Agnostica a tecnologias: el stack se define durante `inception`, y agnostica al CLI: la fuente de verdad de agentes y skills vive en `agents/`/`skills/` en la raiz, y `bin/` traduce esa fuente al formato de cada CLI instalado.
 
 > Este README cubre que es el harness, como instalarlo y como usarlo. La referencia completa y actualizada del proceso (comandos, schema de estado, reglas de git flow), agnostica al CLI que uses, vive en [`HARNESS.md`](./HARNESS.md) — se instala siempre, sin importar que CLI elijas. `AGENTS.md` (con opencode y/o Codex) y `CLAUDE.md` (con Claude Code) son wrappers delgados que la referencian.
 
@@ -75,12 +75,15 @@ La plantilla genera una configuracion equivalente por cada CLI de agentes que el
 | **opencode** | Soportado | `.opencode/agents/`, `.opencode/skills/`, `opencode.json` (generado: `default_agent` + mapa de agentes), `AGENTS.md` |
 | **Claude Code** | Soportado | `.claude/agents/` (traducido desde `agents/`), `.claude/skills/` (copia directa, mismo formato), `CLAUDE.md` (rol de orquestador, generado desde `leader.md`) |
 | **Codex CLI** | Soportado | `.codex/agents/*.toml` (traducido desde `agents/`), `.codex/skills/` (copia directa, de referencia), bloque de orquestador en `AGENTS.md` (Codex no tiene agente por defecto de proyecto) |
+| **Antigravity** | Soportado | `.agents/agents/*.md` (traducido desde `agents/`; `leader` como agente principal), `.agents/skills/` (copia directa, autocarga por description), `AGENTS.md` |
 
-`agents/` y `skills/` en la raiz de este repo son la fuente de verdad agnostica: `bin/` traduce esa fuente al formato de cada CLI instalado (para opencode es una copia literal; para Claude Code y Codex, una traduccion real). `HARNESS.md` y `.harness-state.json` son comunes a cualquier runtime y se instalan siempre. `AGENTS.md` se genera si opencode y/o Codex estan entre los CLIs elegidos (ambos lo leen como contexto de proyecto); con Claude Code solo, no se genera (Claude Code no lo usa).
+`agents/` y `skills/` en la raiz de este repo son la fuente de verdad agnostica: `bin/` traduce esa fuente al formato de cada CLI instalado (para opencode es una copia literal; para Claude Code, Codex y Antigravity, una traduccion real). `HARNESS.md` y `.harness-state.json` son comunes a cualquier runtime y se instalan siempre. `AGENTS.md` se genera si opencode, Codex y/o Antigravity estan entre los CLIs elegidos (los tres lo leen como contexto de proyecto); con Claude Code solo, no se genera (Claude Code no lo usa).
 
 > **Nota sobre la traduccion a Claude Code**: opencode declara permisos granulares por patron de comando bash (ej. `"git *": allow`), algo que el formato de subagentes de Claude Code no puede expresar con la misma precision (alli `tools` es una lista de herramientas, no de comandos). La traduccion es de mejor esfuerzo: los agentes de solo analisis (`quality`) quedan sin `Write`/`Edit`; el resto hereda todas las herramientas. Ver `bin/lib/providers/claude.js` para el detalle.
 >
 > **Nota sobre la traduccion a Codex**: de forma analoga, el permiso `edit: ask` se traduce a `sandbox_mode = "read-only"` y `edit: allow` a `"workspace-write"` en cada `.toml` generado (Codex no tiene permisos granulares por patron de comando bash a nivel de agente individual). Ademas, la documentacion oficial de Codex no describe una auto-delegacion confiable a subagentes: el disparador principal sigue siendo el prompting manual guiado por `AGENTS.md`. Ver `bin/lib/providers/codex.js`.
+>
+> **Nota sobre la traduccion a Antigravity**: cada agente se genera en `.agents/agents/*.md` con el frontmatter de Antigravity. `edit: allow` agrega `write_to_file`/`replace_file_content` a `tools`, y `task: allow` (leader, inception) agrega `invoke_subagent`. Todos llevan `commandExecutionPolicy: off` ("Request Review": pide aprobacion por comando salvo tu allow list), porque el modo por defecto (`sandbox`) corre sin red y rompe `git push`/`gh`/`npx`. Los patrones por comando de opencode (`git *: allow`) no se pueden expresar por agente: se configuran en la allow list global de Antigravity. El `leader` es agente principal (`mainAgent: true`), pero Antigravity no permite fijar un agente por defecto por proyecto: hay que elegirlo al abrir. Si combinas Antigravity con Codex, el bloque de orquestador de Codex en `AGENTS.md` tambien le llega a Antigravity (lo mantiene siempre activo). Ver `bin/lib/providers/antigravity.js`.
 
 ---
 
@@ -88,7 +91,7 @@ La plantilla genera una configuracion equivalente por cada CLI de agentes que el
 
 ### Requisitos previos
 
-- [opencode](https://opencode.ai), [Claude Code](https://claude.com/claude-code) y/o Codex CLI instalado (al menos uno)
+- [opencode](https://opencode.ai), [Claude Code](https://claude.com/claude-code), Codex CLI y/o [Antigravity](https://antigravity.google) instalado (al menos uno)
 - Docker Desktop (opcional, para contenerizacion)
 - Git
 
@@ -157,7 +160,7 @@ cd mi-proyecto
 
 El comando muestra un banner con la version instalada y el estado de cada CLI de agentes en tu PATH (ver [Soporte multi-CLI](#soporte-multi-cli)), y **solo copia la configuracion del/los CLI que elijas** — no instala ambos por defecto salvo que asi lo pidas:
 
-- En una terminal interactiva, sin `--agent`, te pregunta cual(es) usar (estilo "selecciona tu personaje": `[1] opencode`, `[2] claude`, `[3] codex`, `[4] Todos`)
+- En una terminal interactiva, sin `--agent`, te pregunta cual(es) usar (estilo "selecciona tu personaje": `[1] opencode`, `[2] claude`, `[3] codex`, `[4] antigravity`, `[5] Todos`)
 - En scripts/CI (sin terminal interactiva) o con `--yes`, instala todos los soportados por defecto, salvo que pases `--agent` explicitamente
 
 Termina despues de copiar — no queda instalado como dependencia del proyecto.
@@ -166,7 +169,7 @@ Opciones:
 
 | Flag | Efecto |
 |------|--------|
-| `--agent <id>` | CLI(s) a instalar: `opencode`, `claude`, `codex`, combinaciones separadas por coma (ej. `opencode,claude`), o `all`. Omite el prompt interactivo |
+| `--agent <id>` | CLI(s) a instalar: `opencode`, `claude`, `codex`, `antigravity`, combinaciones separadas por coma (ej. `opencode,claude`), o `all`. Omite el prompt interactivo |
 | `--yes` / `-y` | Continua aunque el directorio destino no este vacio; tambien omite el prompt (instala todos si no se paso `--agent`) |
 | `--force` / `-f` | Ademas de `--yes`, permite sobrescribir un `.harness-state.json` con progreso real |
 | `--version` / `-v` | Muestra la version instalada |
@@ -177,6 +180,7 @@ Opciones:
 npx @idsanchezf/harness-engineering mi-proyecto --agent claude
 npx @idsanchezf/harness-engineering mi-proyecto --agent opencode,claude
 npx @idsanchezf/harness-engineering mi-proyecto --agent codex
+npx @idsanchezf/harness-engineering mi-proyecto --agent antigravity
 ```
 
 ### Opcion B: clonando el repo (sin npm/npx)
@@ -218,6 +222,8 @@ El agente lider `leader` se activa automaticamente como agente por defecto. Al i
 **Claude Code:** abre el directorio normalmente — el rol de orquestador ya esta cargado en `CLAUDE.md` y sigue la misma logica de retomar estado descrita arriba.
 
 **Codex CLI:** abre el directorio normalmente — el rol de orquestador ya esta cargado en `AGENTS.md` (Codex no tiene concepto de agente por defecto de proyecto, asi que es el unico canal que lee automaticamente al iniciar sesion) y sigue la misma logica de retomar estado descrita arriba. Nota: la documentacion oficial de Codex no describe una auto-delegacion confiable a subagentes — puede requerir invocar el subagente correspondiente (`.codex/agents/*.toml`) de forma mas explicita que con opencode/Claude Code.
+
+**Antigravity:** abre el directorio y elige el agente `leader` en el desplegable (o `agy --agent leader` desde la terminal). Antigravity no tiene agente por defecto por proyecto, asi que hay que elegirlo en cada sesion; a partir de ahi sigue la misma logica de retomar estado descrita arriba y delega en los subagentes con `invoke_subagent`. El tracking de tokens queda como N/D (sin fuente de uso implementada).
 
 ### 2. Comienza con una solicitud
 

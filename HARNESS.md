@@ -1,6 +1,6 @@
 # Harness Engineering — Referencia del proceso
 
-Este documento es la referencia completa del proceso de Harness Engineering: pipeline, agentes, comandos, archivo de estado y reglas de git. Es **agnostico al CLI de agentes que uses** — aplica igual si trabajas con opencode, Claude Code o Codex CLI. Lo referencian `AGENTS.md` (opencode y/o Codex) y `CLAUDE.md` (Claude Code), y todos lo cargan como contexto ademas de sus propios archivos.
+Este documento es la referencia completa del proceso de Harness Engineering: pipeline, agentes, comandos, archivo de estado y reglas de git. Es **agnostico al CLI de agentes que uses** — aplica igual si trabajas con opencode, Claude Code, Codex CLI o Antigravity. Lo referencian `AGENTS.md` (opencode, Codex y/o Antigravity) y `CLAUDE.md` (Claude Code), y todos lo cargan como contexto ademas de sus propios archivos.
 
 ## Pipeline del SDLC
 
@@ -100,7 +100,7 @@ Los skills se activan automaticamente segun el contexto:
 
 ### Resolucion de skills por stack
 
-Al definir el stack tecnologico durante `inception`, el leader verifica que los skills necesarios existan en la carpeta de skills de tu CLI (`.opencode/skills/` en opencode, `.claude/skills/` en Claude Code, `.codex/skills/` en Codex CLI — en Codex quedan como referencia, sin autocarga nativa). Si falta algun skill para la tecnologia elegida, el leader lo informa al usuario y ofrece opciones para cargarlo o crearlo.
+Al definir el stack tecnologico durante `inception`, el leader verifica que los skills necesarios existan en la carpeta de skills de tu CLI (`.opencode/skills/` en opencode, `.claude/skills/` en Claude Code, `.codex/skills/` en Codex CLI — en Codex quedan como referencia, sin autocarga nativa —, `.agents/skills/` en Antigravity). Si falta algun skill para la tecnologia elegida, el leader lo informa al usuario y ofrece opciones para cargarlo o crearlo.
 
 La columna `Skill` en la tabla de stack de `docs/architecture.md` permite el mapeo automatico:
 
@@ -454,6 +454,7 @@ Los agentes (instrucciones en markdown para opencode/Claude Code) no tienen form
 - **Claude Code**: cada invocacion de subagente (Task tool) escribe su propio transcript aislado en `~/.claude/projects/<proyecto>/<sesion>/subagents/agent-{id}.jsonl` (Windows: `%USERPROFILE%\.claude\projects\...`), con `usage` real (input/output/cache tokens) y `timestamp` por mensaje.
 - **opencode**: `opencode stats --days N --project <path>` (uso/costo agregado). Menos preciso que Claude Code porque agrega por rango de dias, no por fase especifica.
 - **Codex CLI**: sin fuente de tracking implementada por ahora (no se investigo un mecanismo de logs/transcript equivalente) — sus fases quedan como `"tokensSource": "unavailable"`, igual que cualquier fase sin fuente real disponible. No bloquea el pipeline.
+- **Antigravity**: tampoco tiene fuente de tracking implementada — mismo tratamiento que Codex (`"tokensSource": "unavailable"`).
 
 **Que significa cada metrica de tokens** (Claude Code):
 
