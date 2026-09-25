@@ -246,16 +246,20 @@ function renderGlobalView(data) {
       <div class="stat"><div class="label">Features</div><div class="value">${totals.featureCount}</div></div>
       <div class="stat"><div class="label">HUs</div><div class="value">${totals.huCount}</div></div>
       <div class="stat"><div class="label">Tiempo total</div><div class="value">${formatDuration(totals.timeSeconds)}</div></div>
-      <div class="stat"><div class="label">Tokens totales</div><div class="value">${formatNumber(totals.tokens)}</div></div>
+      <div class="stat"><div class="label">Tokens nuevos</div><div class="value">${formatNumber(totals.tokens)}</div></div>
+      <div class="stat"><div class="label">Output</div><div class="value">${formatNumber(totals.outputTokens)}</div></div>
+      <div class="stat"><div class="label">Procesados (incl. caché)</div><div class="value">${formatNumber(totals.processedTokens)}</div></div>
       <div class="stat"><div class="label">Cobertura</div><div class="value ${totals.coverage < 100 ? 'warn' : ''}">${formatPercent(totals.coverage)}</div></div>
     </div>
+
+    <p class="muted">Tokens nuevos = input + output + escritura de caché. Procesados suma además la relectura de caché, que ocurre en cada llamada y se factura a ~10% del input.</p>
 
     ${renderCoverageNote(totals.coverage)}
 
     <div class="card">
       <h2>Por feature</h2>
       <table>
-        <thead><tr><th>ID</th><th>Nombre</th><th>Estado</th><th>HUs</th><th>Tiempo</th><th>Tokens</th><th>Cobertura</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Estado</th><th>HUs</th><th>Tiempo</th><th>Tokens nuevos</th><th>Cobertura</th></tr></thead>
         <tbody>${featureRows || '<tr><td colspan="7" class="muted">Sin features registradas todavia.</td></tr>'}</tbody>
       </table>
     </div>
@@ -326,7 +330,9 @@ function renderFeatureView(f) {
     <div class="stat-grid">
       <div class="stat"><div class="label">HUs</div><div class="value">${f.huCount}</div></div>
       <div class="stat"><div class="label">Tiempo total</div><div class="value">${formatDuration(f.timeSeconds)}</div></div>
-      <div class="stat"><div class="label">Tokens totales</div><div class="value">${formatNumber(f.tokens)}</div></div>
+      <div class="stat"><div class="label">Tokens nuevos</div><div class="value">${formatNumber(f.tokens)}</div></div>
+      <div class="stat"><div class="label">Output</div><div class="value">${formatNumber(f.outputTokens)}</div></div>
+      <div class="stat"><div class="label">Procesados (incl. caché)</div><div class="value">${formatNumber(f.processedTokens)}</div></div>
       <div class="stat"><div class="label">Cobertura</div><div class="value ${f.coverage < 100 ? 'warn' : ''}">${formatPercent(f.coverage)}</div></div>
     </div>
 
@@ -335,7 +341,7 @@ function renderFeatureView(f) {
     <div class="card">
       <h2>Desglose por HU</h2>
       <table>
-        <thead><tr><th>HU</th><th>Titulo</th><th>Tiempo</th><th>Tokens</th><th>Cobertura</th></tr></thead>
+        <thead><tr><th>HU</th><th>Titulo</th><th>Tiempo</th><th>Tokens nuevos</th><th>Cobertura</th></tr></thead>
         <tbody>${huRows || '<tr><td colspan="5" class="muted">Sin HUs registradas todavia.</td></tr>'}</tbody>
       </table>
     </div>
@@ -343,7 +349,7 @@ function renderFeatureView(f) {
     <div class="card">
       <h2>Desglose por HU y fase</h2>
       <table>
-        <thead><tr><th>HU</th><th>Fase</th><th>Duracion</th><th>Tokens</th><th>Fuente</th></tr></thead>
+        <thead><tr><th>HU</th><th>Fase</th><th>Duracion</th><th>Tokens nuevos</th><th>Fuente</th></tr></thead>
         <tbody>${phaseRows || '<tr><td colspan="5" class="muted">Sin fases completadas todavia.</td></tr>'}</tbody>
       </table>
     </div>
@@ -351,7 +357,7 @@ function renderFeatureView(f) {
     <div class="card">
       <h2>Desglose por HU y tarea</h2>
       <table>
-        <thead><tr><th>HU</th><th>Task</th><th>Descripcion</th><th>Capa</th><th>Duracion</th><th>Tokens</th></tr></thead>
+        <thead><tr><th>HU</th><th>Task</th><th>Descripcion</th><th>Capa</th><th>Duracion</th><th>Tokens nuevos</th></tr></thead>
         <tbody>${taskRows || '<tr><td colspan="6" class="muted">Sin tareas completadas todavia.</td></tr>'}</tbody>
       </table>
     </div>

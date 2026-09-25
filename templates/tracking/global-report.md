@@ -16,19 +16,21 @@
 | Features | {N} |
 | HUs | {N} |
 | Tiempo total del proyecto | {Xh} |
-| Tokens totales del proyecto | {N} |
+| Tokens nuevos del proyecto | {N} |
+| Tokens output del proyecto | {N} |
+| Tokens procesados (incl. cache read) | {N} |
 | Costo estimado total (USD) | {N o "N/D"} |
 | Cobertura de datos | {N}% |
 
 ## 2. Por feature
 
-| Feature | Nombre | Estado | HUs | Tiempo total | Tokens totales | Costo est. | Cobertura |
+| Feature | Nombre | Estado | HUs | Tiempo total | Tokens nuevos | Costo est. | Cobertura |
 |---------|--------|--------|-----|--------------|-----------------|------------|-----------|
 | F001 | {nombre} | {estado} | {N} | {Xh} | {N} | {N o "N/D"} | {N}% |
 
 ## 3. Consumo por tipo de fase (proyecto completo)
 
-| Fase | # ejecuciones | Tiempo total | Tiempo promedio | Tokens totales | Tokens promedio | % del total |
+| Fase | # ejecuciones | Tiempo total | Tiempo promedio | Tokens nuevos | Tokens promedio | % del total |
 |------|---------------|--------------|-------------------|-----------------|--------------------|--------------|
 | analysis | {N} | {Xh} | {Xh} | {N} | {N} | {N}% |
 | design | {N} | {Xh} | {Xh} | {N} | {N} | {N}% |
@@ -45,13 +47,13 @@
 
 ## 4. Top 5 HUs mas costosas (todas las features)
 
-| Feature | HU | Tokens totales | Tiempo total |
+| Feature | HU | Tokens nuevos | Tiempo total |
 |---------|-----|-----------------|--------------|
 | F001 | US-001 | {N} | {Xh Ym} |
 
 ## 5. Top 5 tareas mas costosas
 
-| Feature | HU | Task | Tokens totales |
+| Feature | HU | Task | Tokens nuevos |
 |---------|-----|------|-----------------|
 | F001 | US-001 | T001 | {N} |
 

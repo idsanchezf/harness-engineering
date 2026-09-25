@@ -15,20 +15,22 @@
 | Metrica | Valor |
 |---------|-------|
 | Tiempo total | {Xh Ym} |
-| Tokens totales | {N} |
+| Tokens nuevos | {N} |
+| Tokens output | {N} |
+| Tokens procesados (incl. cache read) | {N} |
 | Costo estimado (USD) | {N o "N/D"} |
 | Cantidad de HUs | {N} |
 | Cobertura de datos | {N}% de fases/tareas con tokens reales disponibles |
 
 ## 2. Desglose por HU
 
-| HU | Titulo | Estado | Tiempo total | Tokens totales | Costo est. | Cobertura |
+| HU | Titulo | Estado | Tiempo total | Tokens nuevos | Costo est. | Cobertura |
 |----|--------|--------|--------------|-----------------|------------|-----------|
 | US-001 | {titulo} | {estado} | {Xh Ym} | {N} | {N o "N/D"} | {N}% |
 
 ## 3. Desglose por HU y por fase
 
-| HU | Fase | Duracion | Tokens input | Tokens output | Cache creation | Cache read | Total | Fuente |
+| HU | Fase | Duracion | Tokens input | Tokens output | Cache creation | Cache read | Nuevos | Fuente |
 |----|------|----------|--------------|----------------|-----------------|------------|-------|--------|
 | US-001 | develop | {Xh Ym} | {N} | {N} | {N} | {N} | {N} | claude-transcript |
 | US-001 | test | {Xh Ym} | {N} | {N} | {N} | {N} | {N} | {fuente} |
@@ -36,17 +38,17 @@
 | US-001 | deploy | {Xh Ym} | {N} | {N} | {N} | {N} | {N} | {fuente} |
 | US-001 | tracking | {Xh Ym} | {N} | {N} | {N} | {N} | {N} | {fuente} |
 
-> "Total" incluye tokens de cache read, que se facturan a una fraccion del costo de un token de input fresco (ver seccion 6, "Ratio cache-read / input fresco"). No asumas que Total ≈ costo lineal.
+> "Nuevos" = input + output + cache creation. **No** incluye cache read: es el contexto ya cacheado que el modelo relee en cada llamada, se factura a ~10% del costo de un token de input fresco y sumarlo como consumo infla la cifra ~10x (ver seccion 6, "Ratio cache-read / input fresco"). Los "procesados" de la seccion 1 si lo incluyen.
 
 ## 4. Desglose por HU y por tarea
 
-| HU | Task | Descripcion | Capa | Duracion | Tokens totales | Fuente |
+| HU | Task | Descripcion | Capa | Duracion | Tokens nuevos | Fuente |
 |----|------|-------------|------|----------|-----------------|--------|
 | US-001 | T001 | {descripcion} | Domain | {Xm} | {N} | {fuente} |
 
 ## 5. Consumo por tipo de fase (donde se gasta mas)
 
-| Fase | # ejecuciones | Tiempo total | Tiempo promedio | Tokens totales | Tokens promedio | % del total de tokens |
+| Fase | # ejecuciones | Tiempo total | Tiempo promedio | Tokens nuevos | Tokens promedio | % del total de tokens |
 |------|---------------|--------------|-------------------|-----------------|--------------------|-------------------------|
 | develop | {N} | {Xh} | {Xh} | {N} | {N} | {N}% |
 | test | {N} | {Xh} | {Xh} | {N} | {N} | {N}% |

@@ -79,9 +79,12 @@ function durationSeconds(startedAt, completedAt) {
 // (opts.force) omite este atajo y fuerza el recalculo (ej. si se corrigio un bug en el
 // parser de un provider y hace falta reprocesar la historia). Nunca se reutiliza un
 // resultado "unavailable" (tokens null) -- ese si se reintenta siempre, por si la fuente
-// aparece disponible en una corrida posterior.
+// aparece disponible en una corrida posterior. Tampoco se reutiliza un resultado de
+// claude-transcript sin `processed`: lo calculo el parser anterior a v0.8.1, que contaba
+// cada mensaje ~2x y sumaba cache read en `total`.
 function reuseCachedTracking(cached, duration) {
   if (!cached || !cached.tokens) return null;
+  if (cached.tokensSource === 'claude-transcript' && cached.tokens.processed == null) return null;
   return {
     durationSeconds: duration,
     tokens: cached.tokens,

@@ -455,6 +455,15 @@ Los agentes (instrucciones en markdown para opencode/Claude Code) no tienen form
 - **opencode**: `opencode stats --days N --project <path>` (uso/costo agregado). Menos preciso que Claude Code porque agrega por rango de dias, no por fase especifica.
 - **Codex CLI**: sin fuente de tracking implementada por ahora (no se investigo un mecanismo de logs/transcript equivalente) — sus fases quedan como `"tokensSource": "unavailable"`, igual que cualquier fase sin fuente real disponible. No bloquea el pipeline.
 
+**Que significa cada metrica de tokens** (Claude Code):
+
+- `total` / "tokens nuevos" = `input + output + cacheCreationInput`. Es la cifra de consumo que se suma en reportes y dashboard.
+- `output` = lo que el modelo genero. Es la cifra mas comparable con la que reportan otras herramientas.
+- `processed` / "procesados" = `total + cacheReadInput`. Incluye el contexto cacheado que el modelo relee en cada llamada (system prompt, HARNESS.md, conversacion acumulada). Se factura a ~10% del input y suele ser >90% del volumen, por eso no se suma en `total`.
+- Claude Code escribe una linea por bloque de contenido de un mismo mensaje, repitiendo su `usage`; `track collect` agrupa por `message.id` para contar cada mensaje una vez.
+
+`track collect` reutiliza los tokens ya persistidos de fases completadas, salvo los de Claude Code calculados por el parser anterior a v0.8.1 (sin `processed`), que se recalculan solos. `track collect --force` fuerza el recalculo de todo.
+
 **El leader nunca inventa ni estima un numero de tokens.** Si `track collect` no encuentra una fuente real para una fase o tarea, esa entrada queda `"tokensSource": "unavailable"` / `"tokens": null`, y los reportes la muestran como "N/D" explicitamente — nunca un valor adivinado.
 
 ### Convencion obligatoria: `description` del Task
